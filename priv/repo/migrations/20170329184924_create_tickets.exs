@@ -3,12 +3,14 @@ defmodule Titticket.Repo.Migrations.CreateTickets do
 
   def change do
     create table(:tickets) do
+      timestamps
+
       add :opens, :date
       add :closes, :date
 
       add :title, :string
       add :description, :string
-      add :state, :integer
+      add :status, :integer
 
       add :amount, :integer
       add :payment, { :array, :map }

@@ -1,12 +1,19 @@
 defmodule Titticket.Purchase do
   use Ecto.Schema
 
+  @primary_key { :id, :binary_id, autogenerate: true }
   schema "purchases" do
-    field :at, :utc_datetime
+    timestamps()
 
-    field :type, Titticket.Purchase.Type
+    field :confirmed, :boolean, default: false
+
+    field :identifier, :string
+    field :private, :boolean, default: false
+
+    field :type, Titticket.Payment.Type
     field :details, :map
-    field :answers, { :array, :map }
+    field :questions, { :array, Titticket.Question }
+    field :answers, { :array, Titticket.Answer }
 
     belongs_to :ticket, Titticket.Ticket
   end

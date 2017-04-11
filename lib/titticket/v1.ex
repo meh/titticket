@@ -4,13 +4,13 @@ defmodule Titticket.V1 do
     adapters: [Urna.JSON, Urna.Form]
 
   import Ecto.Query
-  require Titticket.Validation
 
-  alias Titticket.{Repo, Event, Ticket, Purchase}
-  alias Titticket.Validation, as: V
+  alias Titticket.{Repo, Changeset, Status, Event, Ticket, Purchase, Payment, Question, Answer}
+  import Titticket.Authorization
 
   namespace :v1 do
     resource :event do
+      # Get an event.
       get id, as: Integer do
         if event = Repo.get(Event, id) do
           tickets = Repo.all(from t in Ticket,
@@ -22,7 +22,7 @@ defmodule Titticket.V1 do
 
              title:       event.title,
              description: event.description,
-             state:       event.state,
+             status:      event.status,
 
              ticket: tickets }
         else
@@ -30,38 +30,34 @@ defmodule Titticket.V1 do
         end
       end
 
+      # Create an event.
       post do
-        with :authorized          <- V.can?({ :create, :event }),
-             { :ok, opens }       <- V.date(param("opens")),
-             { :ok, closes   }    <- V.date?(param("closes")),
-             { :ok, title }       <- V.string(param("title")),
-             { :ok, description } <- V.string?(param("description")),
-             { :ok, state }       <- V.state(param("state"))
+        with :authorized    <- can?({ :create, :event }),
+             { :ok, event } <- Repo.insert(Event.create(params()))
         do
-          Repo.insert!(%Event{
-            opens:  opens,
-            closes: closes,
-
-            title:       title,
-            description: description,
-            state:       state }).id
+          event.id
         else
           :unauthorized ->
             fail 401
 
-          :error ->
-            fail 422
+          { :error, changeset } ->
+            fail Changeset.errors(changeset), 422
         end
       end
 
+      # Delete an event.
       delete id, as: Integer do
-        with :authorized             <- V.can?({ :delete, :event }),
-             event when event != nil <- Repo.get(Event, id)
+        with :authorized             <- can?({ :delete, :event }),
+             event when event != nil <- Repo.get(Event, id),
+             { :ok, event }          <- Repo.delete(event)
         do
-          Repo.delete!(event).id
+          event.id
         else
           :unauthorized ->
             fail 401
+
+          { :error, changeset } ->
+            fail Changeset.errors(changeset), 422
 
           nil ->
             fail 404
@@ -70,8 +66,13 @@ defmodule Titticket.V1 do
     end
 
     resource :ticket do
+      # Get a ticket.
       get id, as: Integer do
-        if ticket = Repo.get(Ticket, id) |> Repo.preload(:event) do
+        with ticket when ticket != nil <- Repo.get(Ticket, id) |> Repo.preload(:event),
+             { :ok, status }           <- Ecto.Type.dump(Status, ticket.status),
+             { :ok, payment }          <- Ecto.Type.dump({ :array, Payment }, ticket.payment),
+             { :ok, questions }        <- Ecto.Type.dump({ :array, Question }, ticket.questions)
+        do
           purchased = Repo.one(from p in Purchase,
             where:  p.ticket_id == ^ticket.id,
             select: count(p.id))
@@ -81,53 +82,94 @@ defmodule Titticket.V1 do
 
              title:       ticket.title,
              description: ticket.description,
-             state:       ticket.state,
+             status:      status,
 
              amount:    %{purchased: purchased, max: ticket.amount},
-             payment:   ticket.payment,
-             questions: ticket.questions }
+             payment:   payment,
+             questions: questions }
         else
-          fail 404
+          :error ->
+            fail 500
+
+          nil ->
+            fail 404
         end
       end
 
+      # Create a new ticket.
       post do
-        with :authorized             <- V.can?({ :create, :ticket }),
-             { :ok, event }          <- V.integer(param("event")),
-             event when event != nil <- Repo.get(Event, event),
-             { :ok, opens }          <- V.date?(param("opens")),
-             { :ok, closes   }       <- V.date?(param("closes")),
-             { :ok, title }          <- V.string(param("title")),
-             { :ok, description }    <- V.string?(param("description")),
-             { :ok, state }          <- V.state(param("state")),
-             { :ok, amount }         <- V.integer?(param("amount")),
-             { :ok, payment }        <- V.payment(param("payment")),
-             { :ok, questions }      <- V.questions(param("questions"))
+        with :authorized             <- can?({ :create, :ticket }),
+             event when event != nil <- Repo.get(Event, param("event")),
+             { :ok, ticket }         <- Repo.insert(IO.inspect(Ticket.create(event, params())))
         do
-          Repo.insert!(%Ticket{
-            opens:  opens,
-            closes: closes,
-
-            title:       title,
-            description: description,
-            state:       state,
-
-            amount:    amount,
-            payment:   payment,
-            questions: questions,
-
-            event: event }).id
+          ticket.id
         else
           :unauthorized ->
             fail 401
 
-          :error ->
-            fail 422
+          { :error, changeset } ->
+            fail Changeset.errors(changeset), 422
+
+          nil ->
+            fail 404
+        end
+      end
+
+      # Delete a ticket.
+      delete id, as: Integer do
+        with :authorized               <- can?({ :delete, :ticket }),
+             ticket when ticket != nil <- Repo.get(Ticket, id),
+             { :ok, ticket }           <- Repo.delete(ticket)
+        do
+          ticket.id
+        else
+          :unauthorized ->
+            fail 401
+
+          { :error, changeset } ->
+            fail Changeset.errors(changeset), 422
 
           nil ->
             fail 404
         end
       end
     end
+
+    #    resource :purchase do
+    #      post do
+    #        valid = Enum.reduce param("tickets"), { :ok, [] }, fn
+    #          current, { :ok, tickets } ->
+    #            with ticket when ticket != nil <- Repo.get(Ticket, current["id"]),
+    #                 { :ok, _ }                <- V.payment(current["payment"], ticket.payment),
+    #                 { :ok, _ }                <- V.answers(current["answers"], ticket.questions)
+    #            do
+    #              { :ok, [current | tickets] }
+    #            else
+    #              error ->
+    #                error
+    #            end
+    #        end
+    #
+    #        with :authorized      <- can?({ :buy, :ticket }),
+    #             { :ok, tickets } <- valid
+    #        do
+    #          true
+    #          #          Payment.create_payment(%Paypal.Payment{
+    #          #            intent: "sale",
+    #          #            payer:  %{"payment_method" => "paypal"},
+    #          #  
+    #          #            transactions: [%{
+    #          #              "amount" => %{
+    #          #                "currency" => Application.get_env(:titticket, :currency),
+    #          #                "total"    => !price!,
+    #        else
+    #          :unauthorized ->
+    #            fail 401
+    #
+    #          nil ->
+    #            fail 404
+    #        end
+    #      end
+    #    end
   end
 end
