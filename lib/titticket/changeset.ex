@@ -1,3 +1,11 @@
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#                    Version 2, December 2004
+#
+#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+#   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+#
+#  0. You just DO WHAT THE FUCK YOU WANT TO.
+
 defmodule Titticket.Changeset do
   defmacro __using__(_opts) do
     quote do
@@ -21,6 +29,14 @@ defmodule Titticket.Changeset do
         field: field,
         detail: message }
     end)
+  end
+
+  def cast_changes(changeset) do
+    if changeset.valid? do
+      { :ok, apply_changes(changeset) }
+    else
+      :error
+    end
   end
 
   defp message(opts, key \\ :message, default) do
