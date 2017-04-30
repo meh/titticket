@@ -3,21 +3,16 @@ defmodule Titticket.Repo.Migrations.CreatePurchases do
 
   def change do
     create table(:purchases, primary_key: false) do
-      timestamps
+      timestamps()
 
       add :id, :uuid, primary_key: true
-      add :at, :utc_datetime
-      add :confirmed, :boolean
 
       add :identifier, :string
       add :private, :boolean
-
-      add :type, :integer
-      add :details, :map
-      add :questions, { :array, :map}
-      add :answers, { :array, :map}
+      add :answers, { :map, :map }
 
       add :ticket_id, references(:tickets)
+      add :order_id, references(:orders, type: :uuid)
     end
   end
 end

@@ -9,6 +9,7 @@
 defmodule Titticket.Ticket do
   use Ecto.Schema
   use Titticket.Changeset
+  alias Titticket.{Status, Payment, Question, Event, Purchase}
 
   schema "tickets" do
     timestamps()
@@ -18,20 +19,26 @@ defmodule Titticket.Ticket do
 
     field :title, :string
     field :description, :string
-    field :status, Titticket.Status
+    field :status, Status, default: :suspended
 
     field :amount, :integer
-    field :payment, { :array, Titticket.Payment }
-    field :questions, { :array, Titticket.Question }
+    field :payment, { :array, Payment }
+    field :questions, { :map, Question }
 
-    belongs_to :event, Titticket.Event
-    has_many :purchases, Titticket.Purchase
+    belongs_to :event, Event
+    has_many :purchases, Purchase
   end
 
   def create(event, params \\ %{}) do
     %__MODULE__{}
-    |> cast(params, [:opens, :closes, :title, :description, :status, :amount, :payment, :questions])
-    |> validate_required([:title, :status, :payment])
+    |> cast(params, [:opens, :closes, :title, :description, :status, :amount, :payment])
+    |> cast_questions(params["questions"])
+    |> validate_required([:title, :payment])
     |> put_assoc(:event, event)
+  end
+
+  def change(ticket, params \\ %{}) do
+    ticket
+    |> cast(params, [:opens, :closes, :title, :description, :status, :amount, :payment, :questions])
   end
 end

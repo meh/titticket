@@ -1,5 +1,4 @@
 defmodule Titticket.Payment.Price do
-  defstruct [:value, :beyond]
   alias __MODULE__
 
   @behaviour Ecto.Type
@@ -7,9 +6,12 @@ defmodule Titticket.Payment.Price do
 
   use Titticket.Changeset
   @types %{
-    value:  :float,
+    value:  :decimal,
     beyond: Price.Beyond,
   }
+
+  defstruct value:  nil,
+            beyond: nil
 
   def cast(params) do
     { %Price{}, @types }
@@ -19,8 +21,8 @@ defmodule Titticket.Payment.Price do
   end
 
   def load(%{ "value" => value, "beyond" => beyond }) do
-    with { :ok, value }  <- Ecto.Type.load(:float, value),
-         { :ok, beyond } <- Price.Beyond.load(beyond)
+    with { :ok, value }  <- Ecto.Type.cast(:decimal, value),
+         { :ok, beyond } <- if(beyond, do: Price.Beyond.load(beyond), else: { :ok, nil })
     do
       { :ok, %Price{ value: value, beyond: beyond } }
     else
@@ -32,7 +34,7 @@ defmodule Titticket.Payment.Price do
   def load(_), do: :error
 
   def dump(%Price{ value: value, beyond: beyond }) do
-    with { :ok, value }  <- Ecto.Type.dump(:float, value),
+    with { :ok, value }  <- Ecto.Type.dump(:decimal, value),
          { :ok, beyond } <- if(beyond, do: Price.Beyond.dump(beyond), else: { :ok, nil })
     do
       { :ok, %{ "value" => value, "beyond" => beyond } }

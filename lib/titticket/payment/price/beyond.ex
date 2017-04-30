@@ -7,7 +7,6 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule Titticket.Payment.Price.Beyond do
-  defstruct [:date, :value]
   alias __MODULE__
 
   @behaviour Ecto.Type
@@ -16,8 +15,11 @@ defmodule Titticket.Payment.Price.Beyond do
   use Titticket.Changeset
   @types %{
     date:  :date,
-    value: :float,
+    value: :decimal,
   }
+
+  defstruct date:  nil,
+            value: nil
 
   def cast(params) do
     { %Beyond{}, @types }
@@ -28,7 +30,7 @@ defmodule Titticket.Payment.Price.Beyond do
 
   def load(%{ "date" => date, "value" => value }) do
     with { :ok, date }  <- Ecto.Type.cast(:date, date),
-         { :ok, value } <- Ecto.Type.load(:float, value)
+         { :ok, value } <- Ecto.Type.cast(:decimal, value)
     do
       { :ok, %Beyond{ date: date, value: value } }
     else
@@ -41,9 +43,9 @@ defmodule Titticket.Payment.Price.Beyond do
 
   def dump(%Beyond{ date: date, value: value }) do
     with { :ok, date }  <- { :ok, Date.to_string(date) },
-         { :ok, value } <- Ecto.Type.dump(:float, value)
+         { :ok, value } <- Ecto.Type.dump(:decimal, value)
     do
-      { :ok, %{ date: date, value: value } }
+      { :ok, %{ "date" => date, "value" => value } }
     else
       :error ->
         :error

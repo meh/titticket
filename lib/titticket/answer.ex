@@ -7,7 +7,6 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule Titticket.Answer do
-  defstruct [:type]
   alias __MODULE__
   alias Titticket.Question
 
@@ -16,21 +15,25 @@ defmodule Titticket.Answer do
 
   use Titticket.Changeset
   @types %{
-    type: Question.Type,
+    id:    Ecto.UUID,
+    value: :any,
   }
 
-  def cast(params) do
+  defstruct id:    nil,
+            value: nil
+
+  def cast(params) when is_map(params) do
     { %Answer{}, @types }
     |> cast(params, Map.keys(@types))
-    |> validate_required([:type])
+    |> validate_required([:id, :value])
     |> cast_changes
   end
 
   def cast(_), do: :error
 
-  def load(%{ "type" => type }) do
-    with { :ok, type } <- Question.Type.load(type) do
-      { :ok, %Answer{ type: type } }
+  def load(%{ "id" => id, "value" => value }) do
+    with { :ok, id } <- Ecto.UUID.cast(id) do
+      { :ok, %Answer{ id: id, value: value } }
     else
       :error ->
         :error
@@ -39,9 +42,9 @@ defmodule Titticket.Answer do
 
   def load(_), do: :error
 
-  def dump(%Answer{ type: type }) do
-    with { :ok, type } <- Question.Type.dump(type) do
-      { :ok, %{ type: type } }
+  def dump(%Answer{ id: id, value: value }) do
+    with { :ok, id } <- Ecto.Type.dump(:string, id) do
+      { :ok, %{ "id" => id, "value" => value } }
     else
       :error ->
         :error
@@ -49,4 +52,8 @@ defmodule Titticket.Answer do
   end
 
   def dump(_), do: :error
+
+  def public(answer, question) do
+    answer
+  end
 end

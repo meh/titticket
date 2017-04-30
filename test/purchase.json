@@ -1,0 +1,18 @@
+{
+	"event": 1,
+	"payment": {
+		"type": "paypal"
+	},
+	"tickets": [{
+		"identifier": "antani",
+		"id": 1,
+		"private": true,
+		"answers": [{
+			"id": "18052858-8cae-4edf-9b20-48fbfce3e458",
+			"value": "They're cool."
+		}, {
+			"id": "bcdb5f3f-fa20-40d0-9293-b81da3aca50a",
+			"value": "4cea74f0-e53b-49c8-aa85-fc3feda2bdd2"
+		}]
+	}]
+}

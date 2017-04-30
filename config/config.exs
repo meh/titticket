@@ -1,16 +1,8 @@
-# This file is responsible for configuring your application
-# and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
-
 config :titticket,
   ecto_repos: [Titticket.Repo]
 
-# Configure titticket.
-config :titticket,
-  port:   8080,
-  secret: "fill-me"
-
-# Configure the database.
+# Database configuration.
 config :titticket, Titticket.Repo,
   adapter:  Ecto.Adapters.Postgres,
   database: "titticket",
@@ -18,8 +10,19 @@ config :titticket, Titticket.Repo,
   password: "postgres",
   hostname: "localhost"
 
-# Configure PayPal payments.
-config :pay, :paypal,
+# Address and port to listen on.
+config :titticket,
+  host: "127.0.0.1",
+  port: 8080
+  base: "https://example.com"
+
+# Shared secret for authentication.
+config :titticket,
+  secret: "fill-me"
+
+# Configure PayPal.
+config :titticket, :paypal,
+  currency:  :EUR,
   client_id: "fill-me",
   secret:    "fill-me",
-  env:       :prod
+  sandbox:   false

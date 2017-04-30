@@ -16,8 +16,8 @@ defmodule Titticket.Mixfile do
 
   defp deps do
     [ { :urna,     "~> 0.2" },
+      { :httprot,  "~> 0.1" },
       { :ecto,     "~> 2.1" },
-      { :postgrex, "~> 0.13" },
-      { :pay,      github: "era/pay" } ]
+      { :postgrex, "~> 0.13" } ]
   end
 end

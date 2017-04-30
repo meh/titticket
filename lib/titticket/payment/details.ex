@@ -6,35 +6,36 @@
 #
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-defmodule Titticket.Payment do
+defmodule Titticket.Payment.Details do
   alias __MODULE__
+  alias Titticket.Payment
 
   @behaviour Ecto.Type
   def type, do: :map
 
   use Titticket.Changeset
   @types %{
-    type:  Payment.Type,
-    price: Payment.Price,
+    type:    Payment.Type,
+    details: :map,
   }
 
-  defstruct type:  nil,
-            price: nil
+  defstruct type:    nil,
+            details: %{}
 
   def cast(params) when is_map(params) do
-    { %Payment{}, @types }
+    { %Details{}, @types }
     |> cast(params, Map.keys(@types))
-    |> validate_required([:type, :price])
+    |> validate_required([:type])
     |> cast_changes
   end
 
   def cast(_), do: :error
 
-  def load(%{ "type" => type, "price" => price }) do
-    with { :ok, type }  <- Payment.Type.load(type),
-         { :ok, price } <- Payment.Price.load(price)
+  def load(%{ "type" => type, "details" => details }) do
+    with { :ok, type }    <- Payment.Type.load(type),
+         { :ok, details } <- Ecto.Type.load(:map, details)
     do
-      { :ok, %Payment{ type: type, price: price } }
+      { :ok, %Details{ type: type, details: details } }
     else
       :error ->
         :error
@@ -43,11 +44,11 @@ defmodule Titticket.Payment do
 
   def load(_), do: :error
 
-  def dump(%Payment{ type: type, price: price }) do
-    with { :ok, type }  <- Payment.Type.dump(type),
-         { :ok, price } <- Payment.Price.dump(price)
+  def dump(%Details{ type: type, details: details }) do
+    with { :ok, type }    <- Payment.Type.dump(type),
+         { :ok, details } <- Ecto.Type.dump(:map, details)
     do
-      { :ok, %{ "type" => type, "price" => price } }
+      { :ok, %{ "type" => type, "details" => details } }
     else
       :error ->
         :error

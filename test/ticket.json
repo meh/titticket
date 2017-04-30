@@ -1,0 +1,41 @@
+{
+	"event": 1,
+	"title": "foo",
+	"description": "bar",
+	"status": "active",
+	"amount": 50,
+	"payment": [{
+		"type": "paypal",
+		"price": {
+			"value": "42",
+			"beyond": {
+				"value": "56",
+				"date":"2017-03-05"
+			}
+		}
+	}],
+	"questions": [{
+		"type": "text",
+		"title": "Tell us about trains.",
+		"required": true
+	}, {
+		"type": "one",
+		"title": "Pick an animal.",
+		"children": [{
+			"title": "Triangle",
+			"type": "bool",
+			"amount": 50
+		}, {
+			"title": "Square",
+			"type": "bool"
+		}, {
+			"title": "Turtle",
+			"type": "bool",
+			"children": [{
+				"type": "text",
+				"title": "Why do you like turtles?",
+				"required": true
+			}]
+		}]
+	}]
+}

@@ -9,6 +9,7 @@
 defmodule Titticket.Event do
   use Ecto.Schema
   use Titticket.Changeset
+  alias Titticket.{Status, Ticket}
 
   schema "events" do
     timestamps()
@@ -18,14 +19,19 @@ defmodule Titticket.Event do
 
     field :title, :string
     field :description, :string
-    field :status, Titticket.Status
+    field :status, Status, default: :suspended
 
-    has_many :tickets, Titticket.Ticket
+    has_many :tickets, Ticket
   end
 
   def create(params \\ %{}) do
     %__MODULE__{}
     |> cast(params, [:opens, :closes, :title, :description, :status])
-    |> validate_required([:opens, :title, :status])
+    |> validate_required([:opens, :title])
+  end
+
+  def change(event, params \\ {}) do
+    event
+    |> cast(params, [:opens, :closes, :title, :description, :status])
   end
 end

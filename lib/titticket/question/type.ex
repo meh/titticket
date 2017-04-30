@@ -10,6 +10,10 @@ defmodule Titticket.Question.Type do
   @behaviour Ecto.Type
   def type, do: :string
 
+  def cast(:root),  do: { :ok, :root }
+  def cast("root"), do: { :ok, :root }
+  def cast(:bool),  do: { :ok, :bool }
+  def cast("bool"), do: { :ok, :bool }
   def cast(:text),  do: { :ok, :text }
   def cast("text"), do: { :ok, :text }
   def cast(:one),   do: { :ok, :one }
@@ -18,11 +22,15 @@ defmodule Titticket.Question.Type do
   def cast("many"), do: { :ok, :many }
   def cast(_),      do: :error
 
+  def load("root"), do: { :ok, :root }
+  def load("bool"), do: { :ok, :bool }
   def load("text"), do: { :ok, :text }
   def load("one"),  do: { :ok, :one }
   def load("many"), do: { :ok, :many }
   def load(_),      do: :error
 
+  def dump(:root), do: { :ok, "root" }
+  def dump(:bool), do: { :ok, "bool" }
   def dump(:text), do: { :ok, "text" }
   def dump(:one),  do: { :ok, "one" }
   def dump(:many), do: { :ok, "many" }

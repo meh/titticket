@@ -15,20 +15,65 @@ defmodule Titticket.Changeset do
   end
 
   import Ecto.Changeset
-  alias Titticket.Payment
+  alias Titticket.{Payment, Question, Answer}
 
-  def errors(changeset) do
-    Enum.map(changeset.errors, fn
+  defp message(opts, key \\ :message, default) do
+    Keyword.get(opts, key, default)
+  end
+
+  def errors(%Ecto.Changeset{} = changeset) do
+    errors(changeset.errors)
+  end
+
+  def errors(errors) do
+    Enum.map(errors, fn
       { field, { message, values } } -> %{
         field: field,
         detail: Enum.reduce(values, message, fn { k, v }, acc ->
-          String.replace(acc, "%{#{k}}", to_string(v))
+          String.replace(acc, "%{#{k}}", inspect(v))
         end) }
 
       { field, message } -> %{
         field: field,
         detail: message }
     end)
+  end
+
+  def cast_questions(changeset, nil) do
+    changeset
+  end
+
+  def cast_questions(changeset, questions) do
+    case Question.flatten(questions) do
+      { :ok, questions } ->
+        changeset |> put_change(:questions, questions)
+
+      :error ->
+        changeset |> add_error(:questions, "is invalid")
+    end
+  end
+
+  def cast_answers(changeset, nil) do
+    changeset
+  end
+
+  def cast_answers(changeset, answers) do
+    try do
+      answers = Enum.map answers, fn answer ->
+        case Answer.cast(answer) do
+          { :ok, answer } ->
+            { answer.id, answer }
+
+          :error ->
+            throw :error
+        end
+      end
+
+      changeset |> put_change(:answers, answers |> Enum.into(%{}))
+    catch
+      :error ->
+        changeset |> add_error(:answers, "is invalid")
+    end
   end
 
   def cast_changes(changeset) do
@@ -39,19 +84,32 @@ defmodule Titticket.Changeset do
     end
   end
 
-  defp message(opts, key \\ :message, default) do
-    Keyword.get(opts, key, default)
-  end
-
-  def validate_payment(changeset, choice, field, opts \\ []) do
+  def validate_payment(changeset, field, details, opts \\ []) do
     validate_change changeset, field, :payment, fn _, value ->
       []
     end
   end
 
-  def validate_answers(changeset, questions, field, opts \\ []) do
-    validate_change changeset, field, :answers, fn _, value ->
-      []
+  def validate_answers(changeset, field, questions, opts \\ []) do
+    validate_change changeset, field, :answers, fn _, answers ->
+      if (answers == nil) != (questions == nil) do
+        [{ field, { message(opts, "invalid answers"), [validation: :answers] } }]
+      else
+        Enum.flat_map answers, fn { id, answer } ->
+          do_validate_answers(answer, questions[id], opts)
+        end
+      end
     end
+  end
+
+  defp do_validate_answers(answer, questions, opts \\ [])
+
+  defp do_validate_answers(answer, nil, opts) do
+    [{ :answers, { message(opts, "missing question"), [validation: :answers] } }]
+  end
+
+  # TODO: actually validate the answer
+  defp do_validate_answers(answer, question, opts) do
+    []
   end
 end

@@ -9,4 +9,9 @@
 defmodule Titticket.Repo do
   use Ecto.Repo,
     otp_app: :titticket
+
+  def transaction!(what, opts \\ []) do
+    { _, reply } = transaction(what, opts)
+    reply
+  end
 end

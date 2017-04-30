@@ -3,7 +3,7 @@ defmodule Titticket.Repo.Migrations.CreateTickets do
 
   def change do
     create table(:tickets) do
-      timestamps
+      timestamps()
 
       add :opens, :date
       add :closes, :date
@@ -14,7 +14,7 @@ defmodule Titticket.Repo.Migrations.CreateTickets do
 
       add :amount, :integer
       add :payment, { :array, :map }
-      add :questions, { :array, :map }
+      add :questions, { :map, :map }
 
       add :event_id, references(:events)
     end

@@ -3,7 +3,7 @@ defmodule Titticket.Repo.Migrations.CreateEvents do
 
   def change do
     create table(:events) do
-      timestamps
+      timestamps()
 
       add :opens, :date
       add :closes, :date

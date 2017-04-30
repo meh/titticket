@@ -15,8 +15,11 @@ defmodule Titticket.Application do
     import Supervisor.Spec, warn: false
 
     children = [
+      worker(Titticket.Pay.Paypal, []),
       supervisor(Titticket.Repo, []),
-      supervisor(Urna, [Titticket.V1, [port: Application.get_env(:titticket, :port)]]),
+      supervisor(Urna, [Titticket.V1, [
+        host: Application.get_env(:titticket, :host),
+        port: Application.get_env(:titticket, :port) ]]),
     ]
 
     opts = [strategy: :one_for_one, name: Titticket.Supervisor]
