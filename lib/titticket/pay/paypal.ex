@@ -3,6 +3,8 @@ defmodule Titticket.Pay.Paypal do
   import Logger
   alias __MODULE__
 
+  alias Titticket.{Order, Purchase}
+
   @real "https://api.paypal.com/v1"
   @sandbox "https://api.sandbox.paypal.com/v1"
 
@@ -69,19 +71,21 @@ defmodule Titticket.Pay.Paypal do
   @doc """
   Request a new payment.
   """
-  def create(price) do
+  def create(order) do
     result = HTTP.post!("#{url}/payments/payment", Poison.encode!(%{
       intent: :sale,
       payer:  %{payment_method: :paypal},
 
       transactions: [%{
         amount: %{
-          currency: Application.get_env(:titticket, :paypal)[:currency],
-          total:    price } }],
+          description: "Tickets purchase.",
+          currency:    Application.get_env(:titticket, :paypal)[:currency],
+          details:     Enum.map(order.purchases, &{ &1.title, Purchase.total(&1) }) |> Enum.into(%{}),
+          total:       Order.total(order) } }],
 
       redirect_urls: %{
-        return_url: "#{Application.get_env(:titticket, :base)}/paypal/done",
-        cancel_url: "#{Application.get_env(:titticket, :base)}/paypal/cancel" }
+        return_url: "#{Application.get_env(:titticket, :base)}/v1/paypal/done",
+        cancel_url: "#{Application.get_env(:titticket, :base)}/v1/paypal/cancel" }
     }), headers) |> parse
   end
 

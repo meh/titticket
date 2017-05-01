@@ -293,11 +293,9 @@ defmodule Titticket.V1 do
                { :ok, payment }        <- Payment.Type.cast(param("payment")["type"]),
                { :ok, _ }              <- purchases.(payment, event, order, param("tickets"))
           do
-            total = order |> Repo.preload(purchases: :ticket) |> Order.total(payment)
-
             { action, details } = case payment do
               :paypal ->
-                response = Pay.Paypal.create!(total) |> IO.inspect
+                response = Pay.Paypal.create!(order |> Repo.preload(purchases: :ticket))
 
                 { %{ redirect: Enum.find(response["links"], &(&1["rel"] == "approval_url"))["href"] },
                   %{ id:       response["id"] } }
@@ -334,14 +332,35 @@ defmodule Titticket.V1 do
     # PayPal redirection stuff.
     namespace :paypal do
       resource :done do
-        post do
-          IO.inspect params
+        get do
+          payment  = query("paymentId")
+          payer    = query("PayerID")
+          response = Pay.Paypal.execute!(payment, payer)
+          order    = Repo.one(from o in Order,
+            where: fragment(~s[? #> '{details,id}' = ?], o.payment, ^payment) and
+                   fragment(~s[? -> 'type' = ?], o.payment, ^:paypal))
+
+          Repo.update!(order
+            |> Order.confirmed
+            |> Order.payment(%{ payment | details: %{
+              id:    payment,
+              cert:  response["cert"],
+              payer: payer } }))
+
+          order.id
         end
       end
 
       resource :cancel do
-        post do
-          IO.inspect params
+        get do
+          payment = query("paymentId")
+          order   = Repo.one(from o in Order,
+            where: fragment(~s[? #> '{details,id}' = ?], o.payment, ^payment) and
+                   fragment(~s[? -> 'type' = ?], o.payment, ^:paypal))
+
+          Repo.delete!(order)
+
+          order.id
         end
       end
     end
