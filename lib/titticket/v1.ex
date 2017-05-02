@@ -11,6 +11,7 @@ defmodule Titticket.V1 do
     allow:    [headers: true, methods: true, credentials: true],
     adapters: [Urna.JSON, Urna.Form]
 
+  require Logger
   alias Titticket.{Repo, Changeset, Status, Event, Ticket, Order, Purchase, Payment, Question, Answer, Pay}
   import Titticket.Authorization
 
