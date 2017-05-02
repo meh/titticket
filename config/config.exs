@@ -22,7 +22,12 @@ config :titticket,
 
 # Configure PayPal.
 config :titticket, :paypal,
-  currency:  :EUR,
-  client_id: "fill-me",
-  secret:    "fill-me",
-  sandbox:   false
+  currency: :EUR,
+
+  id:     "fill-me",
+  secret: "fill-me",
+
+  sandbox: [
+    id:     "fill-me",
+    secret: "fill-me",
+  ]

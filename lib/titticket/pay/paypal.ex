@@ -15,10 +15,10 @@ defmodule Titticket.Pay.Paypal do
   end
 
   def url do
-    if Application.get_env(:titticket, :paypal)[:sandbox] do
-      @sandbox
-    else
+    if Mix.env == :prod do
       @real
+    else
+      @sandbox
     end
   end
 
@@ -56,8 +56,13 @@ defmodule Titticket.Pay.Paypal do
   end
 
   defp auth do
-    user = Application.get_env(:titticket, :paypal)[:client_id]
-    pass = Application.get_env(:titticket, :paypal)[:secret]
+    { user, pass } = if Mix.env == :prod do
+      { Application.get_env(:titticket, :paypal)[:id],
+        Application.get_env(:titticket, :paypal)[:secret] }
+    else
+      { Application.get_env(:titticket, :paypal)[:sandbox][:id],
+        Application.get_env(:titticket, :paypal)[:sandbox][:secret] }
+    end
 
     :base64.encode("#{user}:#{pass}")
   end
