@@ -30,6 +30,26 @@ defmodule Titticket.Order do
     |> put_assoc(:event, event)
   end
 
+  def update(order, params \\ %{}) do
+    order     = order |> change(%{})
+    confirmed = params["confirmed"]
+    details   = params["details"]
+
+    order = if is_boolean(confirmed) do
+      order |> put_change(:confirmed, confirmed)
+    else
+      order
+    end
+
+    order = if is_map(details) do
+      order |> put_change(:payment, %Payment.Details{ order.payment | details: details })
+    else
+      order
+    end
+
+    order
+  end
+
   def confirm(order) do
     order
     |> change(%{ confirmed: true })
@@ -39,7 +59,6 @@ defmodule Titticket.Order do
     order
     |> change(%{ payment: payment })
   end
-
 
   def total(order) do
     total(order, order.payment.type)

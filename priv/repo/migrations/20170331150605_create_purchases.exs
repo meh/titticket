@@ -12,7 +12,7 @@ defmodule Titticket.Repo.Migrations.CreatePurchases do
       add :answers, { :map, :map }
 
       add :ticket_id, references(:tickets)
-      add :order_id, references(:orders, type: :uuid)
+      add :order_id, references(:orders, type: :uuid, on_delete: :delete_all)
     end
   end
 end

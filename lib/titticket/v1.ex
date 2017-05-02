@@ -225,6 +225,55 @@ defmodule Titticket.V1 do
           fail 404
         end
       end
+
+      # Confirm a manual order.
+      patch id do
+        manual? = fn order ->
+          order.payment.type != :paypal
+        end
+
+        Repo.transaction! fn ->
+          with :authorized             <- can?({ :change, :order }),
+               order when order != nil <- Repo.get(Order, id),
+               true                    <- manual?.(order),
+               { :ok, order }          <- Repo.update(order |> Order.update(params()))
+          do
+            order.id
+          else
+            :unauthorized ->
+              Repo.rollback(fail 401)
+
+            false ->
+              Repo.rollback(fail 401)
+
+            nil ->
+              Repo.rollback(fail 404)
+
+            { :error, changeset } ->
+              Repo.rollback(fail Changeset.errors(changeset), 422)
+          end
+        end
+      end
+
+      delete id do
+        Repo.transaction! fn ->
+          with :authorized             <- can?({ :delete, :order }),
+               order when order != nil <- Repo.get(Order, id),
+               { :ok, order }          <- Repo.delete(order)
+          do
+            order.id
+          else
+            :unauthorized ->
+              Repo.rollback(fail 401)
+
+            { :error, changeset } ->
+              Repo.rollback(fail Changeset.errors(changeset), 422)
+
+            nil ->
+              Repo.rollback(fail 404)
+          end
+        end
+      end
     end
 
     resource :purchase do
