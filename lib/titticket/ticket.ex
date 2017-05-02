@@ -9,6 +9,8 @@
 defmodule Titticket.Ticket do
   use Ecto.Schema
   use Titticket.Changeset
+
+  alias __MODULE__
   alias Titticket.{Status, Payment, Question, Event, Purchase}
 
   schema "tickets" do
@@ -40,5 +42,13 @@ defmodule Titticket.Ticket do
   def change(ticket, params \\ %{}) do
     ticket
     |> cast(params, [:opens, :closes, :title, :description, :status, :amount, :payment, :questions])
+  end
+
+  def purchases(ticket) do
+    import Ecto.Query
+
+    from p in Purchase,
+      where:  p.ticket_id == ^ticket.id,
+      select: count(p.id)
   end
 end

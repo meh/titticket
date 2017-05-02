@@ -9,6 +9,7 @@
 defmodule Titticket.Purchase do
   use Ecto.Schema
   use Titticket.Changeset
+
   alias Titticket.{Ticket, Payment, Answer, Order}
 
   @primary_key { :id, :binary_id, autogenerate: true }
@@ -56,7 +57,7 @@ defmodule Titticket.Purchase do
       question = purchase.ticket.questions[id]
 
       if question.price do
-        total |> Decimal.add question.price
+        total |> Decimal.add(question.price)
       else
         total
       end

@@ -10,6 +10,7 @@ defmodule Titticket.Order do
   use Ecto.Schema
   use Titticket.Changeset
 
+  alias __MODULE__
   alias Titticket.{Event, Purchase, Payment}
 
   @primary_key { :id, :binary_id, autogenerate: true }
@@ -39,6 +40,7 @@ defmodule Titticket.Order do
     |> change(%{ payment: payment })
   end
 
+
   def total(order) do
     total(order, order.payment.type)
   end
@@ -46,5 +48,13 @@ defmodule Titticket.Order do
   def total(order, payment) do
     Enum.reduce order.purchases, Decimal.new(0),
       &Decimal.add(Purchase.total(&1, payment), &2)
+  end
+
+  def for_paypal(id) when is_binary(id) do
+    import Ecto.Query
+
+    from o in Order,
+      where: fragment(~s[? #> '{details,id}' = ?], o.payment, ^id) and
+             fragment(~s[? -> 'type' = ?], o.payment, ^:paypal)
   end
 end

@@ -34,4 +34,12 @@ defmodule Titticket.Event do
     event
     |> cast(params, [:opens, :closes, :title, :description, :status])
   end
+
+  def tickets(event) do
+    import Ecto.Query
+
+    from t in Ticket,
+      where:  t.event_id == ^event.id,
+      select: t.id
+  end
 end

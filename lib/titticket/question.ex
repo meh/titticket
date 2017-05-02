@@ -8,6 +8,7 @@
 
 defmodule Titticket.Question do
   alias __MODULE__
+  alias Titticket.Purchase
 
   @behaviour Ecto.Type
   def type, do: :map
@@ -137,5 +138,13 @@ defmodule Titticket.Question do
       :error ->
         throw :error
     end
+  end
+
+  def purchases(id) do
+    import Ecto.Query
+
+    from p in Purchase,
+      where: fragment("? \\? ?", p.answers, ^id),
+      select: count(p.id)
   end
 end

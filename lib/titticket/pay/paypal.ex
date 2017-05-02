@@ -77,11 +77,11 @@ defmodule Titticket.Pay.Paypal do
       payer:  %{payment_method: :paypal},
 
       transactions: [%{
+        description: order.event.title,
+
         amount: %{
-          description: "Tickets purchase.",
-          currency:    Application.get_env(:titticket, :paypal)[:currency],
-          details:     Enum.map(order.purchases, &{ &1.title, Purchase.total(&1) }) |> Enum.into(%{}),
-          total:       Order.total(order) } }],
+          currency: Application.get_env(:titticket, :paypal)[:currency],
+          total:    Order.total(order, :paypal) } }],
 
       redirect_urls: %{
         return_url: "#{Application.get_env(:titticket, :base)}/v1/paypal/done",

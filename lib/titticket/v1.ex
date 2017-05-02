@@ -11,8 +11,6 @@ defmodule Titticket.V1 do
     allow:    [headers: true, methods: true, credentials: true],
     adapters: [Urna.JSON, Urna.Form]
 
-  import Ecto.Query
-
   alias Titticket.{Repo, Changeset, Status, Event, Ticket, Order, Purchase, Payment, Question, Answer, Pay}
   import Titticket.Authorization
 
@@ -21,9 +19,7 @@ defmodule Titticket.V1 do
       # Get an event.
       get id, as: Integer do
         if event = Repo.get(Event, id) do
-          tickets = Repo.all(from t in Ticket,
-            where:  t.event_id == ^event.id,
-            select: t.id)
+          tickets = Repo.all(Event.tickets(event))
 
           %{ opens:  event.opens,
              closes: event.closes,
@@ -106,9 +102,7 @@ defmodule Titticket.V1 do
             case Question.dump(question) do
               { :ok, question } ->
                 purchased = if amount do
-                  Repo.one(from p in Purchase,
-                    where: fragment("? \\? ?", p.answers, ^id),
-                    select: count(p.id))
+                  Repo.one(Question.purchases(id))
                 end
 
                 { :ok, question |> Map.put("purchased", purchased) }
@@ -124,9 +118,7 @@ defmodule Titticket.V1 do
              { :ok, payment }          <- Ecto.Type.dump({ :array, Payment }, ticket.payment),
              { :ok, questions }        <- prepare.(ticket.questions)
         do
-          purchased = Repo.one(from p in Purchase,
-            where:  p.ticket_id == ^ticket.id,
-            select: count(p.id))
+          purchased = Repo.one(Ticket.purchases(ticket))
 
           %{ opens:  ticket.opens || ticket.event.opens,
              closes: ticket.closes || ticket.event.closes,
@@ -170,16 +162,10 @@ defmodule Titticket.V1 do
 
       # Change a ticket.
       patch id, as: Integer do
-        purchases = fn ticket ->
-          Repo.one from p in Purchase,
-            where:  p.ticket_id == ^ticket.id,
-            select: count(p.id)
-        end
-
         Repo.transaction! fn ->
           with :authorized               <- can?({ :change, :event }),
                ticket when ticket != nil <- Repo.get(Ticket, id),
-               0                         <- purchases.(ticket),
+               0                         <- Ticket.purchases(ticket),
                { :ok, ticket }           <- Repo.update(ticket |> Ticket.change(params()))
           do
             ticket.id
@@ -295,7 +281,7 @@ defmodule Titticket.V1 do
           do
             { action, details } = case payment do
               :paypal ->
-                response = Pay.Paypal.create!(order |> Repo.preload(purchases: :ticket))
+                response = Pay.Paypal.create!(order |> Repo.preload([:event, purchases: :ticket]))
 
                 { %{ redirect: Enum.find(response["links"], &(&1["rel"] == "approval_url"))["href"] },
                   %{ id:       response["id"] } }
@@ -336,13 +322,13 @@ defmodule Titticket.V1 do
           payment  = query("paymentId")
           payer    = query("PayerID")
           response = Pay.Paypal.execute!(payment, payer)
-          order    = Repo.one(from o in Order,
-            where: fragment(~s[? #> '{details,id}' = ?], o.payment, ^payment) and
-                   fragment(~s[? -> 'type' = ?], o.payment, ^:paypal))
+          order    = Repo.one(Order.for_paypal(payment))
+
+          Logger.info "PayPal payment executed for order #{order.id}"
 
           Repo.update!(order
-            |> Order.confirmed
-            |> Order.payment(%{ payment | details: %{
+            |> Order.confirm
+            |> Order.payment(%{ order.payment | details: %{
               id:    payment,
               cert:  response["cert"],
               payer: payer } }))
@@ -354,9 +340,9 @@ defmodule Titticket.V1 do
       resource :cancel do
         get do
           payment = query("paymentId")
-          order   = Repo.one(from o in Order,
-            where: fragment(~s[? #> '{details,id}' = ?], o.payment, ^payment) and
-                   fragment(~s[? -> 'type' = ?], o.payment, ^:paypal))
+          order   = Repo.one(Order.for_paypal(payment))
+
+          Logger.info "PayPal payment cancelled for order #{order.id}"
 
           Repo.delete!(order)
 
