@@ -39,8 +39,8 @@ defmodule Titticket.V1 do
              description: event.description,
              status:      event.status,
 
-             ticket: tickets,
-             orders: orders }
+             tickets: tickets,
+             orders:  orders }
         else
           :unauthorized ->
             fail 401
