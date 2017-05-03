@@ -243,13 +243,11 @@ defmodule Titticket.V1 do
         Repo.transaction! fn ->
           # Check if a purchase is available based on its answers.
           available = fn purchase ->
-            result = Enum.find purchase.answers, fn answer ->
-              question = purchase.ticket.questions[answer.id]
+            result = Enum.find purchase.answers, fn { id, _ } ->
+              question = purchase.ticket.questions[id]
 
               if question.amount do
-                question.amount > Repo.one(Question.purchases(answer.id)) - 1
-              else
-                false
+                question.amount < Repo.one(Question.purchases(id))
               end
             end
 
