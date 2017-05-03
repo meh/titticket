@@ -19,8 +19,16 @@ defmodule Titticket.V1 do
     resource :event do
       # Get an event.
       get id, as: Integer do
-        if event = Repo.get(Event, id) do
-          tickets = Repo.all(Event.tickets(event))
+        with :authorized             <- can?({ :see, :event, id }),
+             event when event != nil <- Repo.get(Event, id)
+        do
+          tickets = if :authorized == can?({ :see, :event, id, :tickets }) do
+            Repo.all(Event.tickets(event))
+          end
+
+          orders = if :authorized == can?({ :see, :event, id, :orders }) do
+            Repo.all(Event.orders(event))
+          end
 
           %{ opens:  event.opens,
              closes: event.closes,
@@ -29,9 +37,14 @@ defmodule Titticket.V1 do
              description: event.description,
              status:      event.status,
 
-             ticket: tickets }
+             ticket: tickets,
+             orders: orders }
         else
-          fail 404
+          :unauthorized ->
+            fail 401
+
+          nil ->
+            fail 404
         end
       end
 
@@ -55,7 +68,7 @@ defmodule Titticket.V1 do
       # Change an event.
       patch id, as: Integer do
         Repo.transaction! fn ->
-          with :authorized             <- can?({ :change, :event }),
+          with :authorized             <- can?({ :change, :event, id }),
                event when event != nil <- Repo.get(Event, id),
                { :ok, event }          <- Repo.update(event |> Event.change(params()))
           do
@@ -76,7 +89,7 @@ defmodule Titticket.V1 do
       # Delete an event.
       delete id, as: Integer do
         Repo.transaction! fn ->
-          with :authorized             <- can?({ :delete, :event }),
+          with :authorized             <- can?({ :delete, :event, id }),
                event when event != nil <- Repo.get(Event, id),
                { :ok, event }          <- Repo.delete(event)
           do
@@ -114,7 +127,8 @@ defmodule Titticket.V1 do
           end
         end
 
-        with ticket when ticket != nil <- Repo.get(Ticket, id) |> Repo.preload(:event),
+        with :authorized               <- can?({ :see, :ticket, id }),
+             ticket when ticket != nil <- Repo.get(Ticket, id) |> Repo.preload(:event),
              { :ok, status }           <- Ecto.Type.dump(Status, ticket.status),
              { :ok, payment }          <- Ecto.Type.dump({ :array, Payment }, ticket.payment),
              { :ok, questions }        <- prepare.(ticket.questions)
@@ -164,7 +178,7 @@ defmodule Titticket.V1 do
       # Change a ticket.
       patch id, as: Integer do
         Repo.transaction! fn ->
-          with :authorized               <- can?({ :change, :event }),
+          with :authorized               <- can?({ :change, :ticket, id }),
                ticket when ticket != nil <- Repo.get(Ticket, id),
                0                         <- Ticket.purchases(ticket),
                { :ok, ticket }           <- Repo.update(ticket |> Ticket.change(params()))
@@ -186,7 +200,7 @@ defmodule Titticket.V1 do
       # Delete a ticket.
       delete id, as: Integer do
         Repo.transaction! fn ->
-          with :authorized               <- can?({ :delete, :ticket }),
+          with :authorized               <- can?({ :delete, :ticket, id }),
                ticket when ticket != nil <- Repo.get(Ticket, id),
                { :ok, ticket }           <- Repo.delete(ticket)
           do
@@ -207,8 +221,6 @@ defmodule Titticket.V1 do
 
     resource :order do
       # Get an order.
-      #
-      # Answers to purchases are filtered out when set to private.
       get id do
         if order = Repo.get(Order, id) |> Repo.preload(purchases: [:ticket, :order]) do
           %{ event:     order.event_id,
@@ -219,70 +231,32 @@ defmodule Titticket.V1 do
                %{ ticket:     purchase.ticket_id,
                   identifier: purchase.identifier,
                   total:      Purchase.total(purchase),
-                  answers:    if(:authorized == can?({ :read, :answers }), do: purchase.answers, else: %{}) }
+                  answers:    if(:authorized == can?({ :see, :answers, purchase.id }), do: purchase.answers, else: %{}) }
              end) }
         else
           fail 404
         end
       end
 
-      # Confirm a manual order.
-      patch id do
-        manual? = fn order ->
-          order.payment.type != :paypal
-        end
-
-        Repo.transaction! fn ->
-          with :authorized             <- can?({ :change, :order }),
-               order when order != nil <- Repo.get(Order, id),
-               true                    <- manual?.(order),
-               { :ok, order }          <- Repo.update(order |> Order.update(params()))
-          do
-            order.id
-          else
-            :unauthorized ->
-              Repo.rollback(fail 401)
-
-            false ->
-              Repo.rollback(fail 401)
-
-            nil ->
-              Repo.rollback(fail 404)
-
-            { :error, changeset } ->
-              Repo.rollback(fail Changeset.errors(changeset), 422)
-          end
-        end
-      end
-
-      delete id do
-        Repo.transaction! fn ->
-          with :authorized             <- can?({ :delete, :order }),
-               order when order != nil <- Repo.get(Order, id),
-               { :ok, order }          <- Repo.delete(order)
-          do
-            order.id
-          else
-            :unauthorized ->
-              Repo.rollback(fail 401)
-
-            { :error, changeset } ->
-              Repo.rollback(fail Changeset.errors(changeset), 422)
-
-            nil ->
-              Repo.rollback(fail 404)
-          end
-        end
-      end
-    end
-
-    resource :purchase do
+      # Create a new order.
       post do
         Repo.transaction! fn ->
+          # Check if a purchase is available based on its answers.
           available = fn purchase ->
-            { :ok, purchase }
+            result = Enum.find purchase.answers, fn answer ->
+              question = purchase.ticket.questions[answer.id]
+
+              if question.amount do
+                question.amount > Repo.one(Question.purchases(answer.id)) - 1
+              else
+                false
+              end
+            end
+
+            unless result, do: { :ok, purchase }, else: :error
           end
 
+          # Create purchases.
           purchases = fn payment, event, order, tickets ->
             try do
               purchases = Enum.map tickets, fn current ->
@@ -322,7 +296,7 @@ defmodule Titticket.V1 do
             end
           end
 
-          with :authorized             <- can?({ :buy, :ticket }),
+          with :authorized             <- can?({ :create, :order, param("event") }),
                event when event != nil <- Repo.get(Event, param("event")),
                :active                 <- event.status,
                { :ok, order }          <- Repo.insert(Order.create(event)),
@@ -363,9 +337,59 @@ defmodule Titticket.V1 do
           end
         end, timeout: :infinity
       end
+
+      # Confirm a manual order.
+      patch id do
+        manual? = fn order ->
+          order.payment.type != :paypal
+        end
+
+        Repo.transaction! fn ->
+          with :authorized             <- can?({ :change, :order, id }),
+               order when order != nil <- Repo.get(Order, id),
+               true                    <- manual?.(order),
+               { :ok, order }          <- Repo.update(order |> Order.update(params()))
+          do
+            order.id
+          else
+            :unauthorized ->
+              Repo.rollback(fail 401)
+
+            false ->
+              Repo.rollback(fail 401)
+
+            nil ->
+              Repo.rollback(fail 404)
+
+            { :error, changeset } ->
+              Repo.rollback(fail Changeset.errors(changeset), 422)
+          end
+        end
+      end
+
+      # Delete an order.
+      delete id do
+        Repo.transaction! fn ->
+          with :authorized             <- can?({ :delete, :order, id }),
+               order when order != nil <- Repo.get(Order, id),
+               { :ok, order }          <- Repo.delete(order)
+          do
+            order.id
+          else
+            :unauthorized ->
+              Repo.rollback(fail 401)
+
+            { :error, changeset } ->
+              Repo.rollback(fail Changeset.errors(changeset), 422)
+
+            nil ->
+              Repo.rollback(fail 404)
+          end
+        end
+      end
     end
 
-    # PayPal redirection stuff.
+    # PayPal integration stuff.
     namespace :paypal do
       resource :done do
         get do

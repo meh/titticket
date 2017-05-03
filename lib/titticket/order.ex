@@ -21,7 +21,7 @@ defmodule Titticket.Order do
     field :payment, Payment.Details
 
     belongs_to :event, Event
-    has_many :purchases, Purchase
+    has_many :purchases, Purchase, on_delete: :delete_all
   end
 
   def create(event, params \\ %{}) do

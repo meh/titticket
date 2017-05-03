@@ -9,7 +9,7 @@
 defmodule Titticket.Event do
   use Ecto.Schema
   use Titticket.Changeset
-  alias Titticket.{Status, Ticket}
+  alias Titticket.{Status, Ticket, Order}
 
   schema "events" do
     timestamps()
@@ -22,6 +22,7 @@ defmodule Titticket.Event do
     field :status, Status, default: :suspended
 
     has_many :tickets, Ticket
+    has_many :orders, Order
   end
 
   def create(params \\ %{}) do
@@ -41,5 +42,13 @@ defmodule Titticket.Event do
     from t in Ticket,
       where:  t.event_id == ^event.id,
       select: t.id
+  end
+
+  def orders(event) do
+    import Ecto.Query
+
+    from o in Order,
+      where:  o.event_id == ^event.id,
+      select: o.id
   end
 end

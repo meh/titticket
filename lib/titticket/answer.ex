@@ -52,8 +52,4 @@ defmodule Titticket.Answer do
   end
 
   def dump(_), do: :error
-
-  def public(answer, question) do
-    answer
-  end
 end

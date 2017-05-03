@@ -17,7 +17,13 @@ defmodule Titticket.Authorization do
     end
   end
 
-  def can?(:god, _what),              do: :authorized
-  def can?(_user, { :buy, :ticket }), do: :authorized
-  def can?(_user, _what),             do: :unauthorized
+  # Administrator privileges, all of them!
+  def can?(:god, _what), do: :authorized
+
+  # Normal user privileges.
+  def can?(_, { :see, :event, _ }),           do: :authorized
+  def can?(_, { :see, :event, _, :tickets }), do: :authorized
+  def can?(_, { :see, :ticket, _ }),          do: :authorized
+  def can?(_, { :create, :order, _ }),        do: :authorized
+  def can?(_, _),                             do: :unauthorized
 end

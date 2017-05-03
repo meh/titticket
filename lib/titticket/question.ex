@@ -144,7 +144,7 @@ defmodule Titticket.Question do
     import Ecto.Query
 
     from p in Purchase,
-      where: fragment("? \\? ?", p.answers, ^id),
+      where:  fragment("? \\? ?", p.answers, ^id),
       select: count(p.id)
   end
 end
