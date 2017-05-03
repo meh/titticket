@@ -396,16 +396,20 @@ defmodule Titticket.V1 do
           response = Pay.Paypal.execute!(payment, payer)
           order    = Repo.one(Order.for_paypal(payment))
 
-          Logger.info "PayPal payment executed for order #{order.id}"
+          if response["state"] == "approved" do
+            Logger.info "PayPal payment executed for order #{order.id}"
 
-          Repo.update!(order
-            |> Order.confirm
-            |> Order.payment(%{ order.payment | details: %{
-              id:    payment,
-              cert:  response["cert"],
-              payer: payer } }))
+            Repo.update!(order
+              |> Order.confirm
+              |> Order.payment(%{ order.payment | details: %{
+                id:    payment,
+                payer: payer } }))
 
-          order.id
+            order.id
+          else
+            Logger.error "PayPal payment failed for order #{order.id}"
+            fail 401
+          end
         end
       end
 
