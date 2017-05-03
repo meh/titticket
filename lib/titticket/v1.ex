@@ -30,17 +30,16 @@ defmodule Titticket.V1 do
             Repo.all(Event.orders(event))
           end
 
-          %{ id: event.id,
+          %{ id:      event.id,
+             tickets: tickets,
+             orders:  orders,
 
              opens:  event.opens,
              closes: event.closes,
 
              title:       event.title,
              description: event.description,
-             status:      event.status,
-
-             tickets: tickets,
-             orders:  orders }
+             status:      event.status }
         else
           :unauthorized ->
             fail 401
@@ -121,7 +120,8 @@ defmodule Titticket.V1 do
                   Repo.one(Question.purchases(id))
                 end
 
-                { :ok, question |> Map.put("purchased", purchased) }
+                { :ok, question
+                  |> Map.put("amount", %{ purchased: purchased, max: amount }) }
 
               :error ->
                 :error
