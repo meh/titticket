@@ -21,6 +21,9 @@ defmodule Titticket.Changeset do
     Keyword.get(opts, key, default)
   end
 
+  @doc """
+  Convert changeset errors to something JSON encodable.
+  """
   def errors(%Ecto.Changeset{} = changeset) do
     errors(changeset.errors)
   end
@@ -39,6 +42,9 @@ defmodule Titticket.Changeset do
     end)
   end
 
+  @doc """
+  Cast a set of questions.
+  """
   def cast_questions(changeset, nil) do
     changeset
   end
@@ -53,6 +59,9 @@ defmodule Titticket.Changeset do
     end
   end
 
+  @doc """
+  Cast a set of answers.
+  """
   def cast_answers(changeset, nil) do
     changeset
   end
@@ -76,6 +85,9 @@ defmodule Titticket.Changeset do
     end
   end
 
+  @doc """
+  Transform a changeset to a castable.
+  """
   def cast_changes(changeset) do
     if changeset.valid? do
       { :ok, apply_changes(changeset) }
@@ -84,12 +96,22 @@ defmodule Titticket.Changeset do
     end
   end
 
+  @doc """
+  Validate a payment based on the details given.
+
+  TODO: actually validate the payment
+  """
   def validate_payment(changeset, field, details, opts \\ []) do
     validate_change changeset, field, :payment, fn _, value ->
       []
     end
   end
 
+  @doc """
+  Validate a set of answers based on the question schema they should respect.
+
+  TODO: actually validate the answers
+  """
   def validate_answers(changeset, field, questions, opts \\ []) do
     validate_change changeset, field, :answers, fn _, answers ->
       if (answers == nil) != (questions == nil) do
@@ -108,7 +130,6 @@ defmodule Titticket.Changeset do
     [{ :answers, { message(opts, "missing question"), [validation: :answers] } }]
   end
 
-  # TODO: actually validate the answer
   defp do_validate_answers(answer, question, opts) do
     []
   end

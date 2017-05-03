@@ -75,6 +75,9 @@ defmodule Titticket.Question do
     end
   end
 
+  @doc """
+  Turn the flattened representation to a deeply nested tree.
+  """
   def unflatten(questions, mapper \\ fn question -> Question.dump(question) end) do
     try do
       questions = Enum.map questions["00000000-0000-0000-0000-000000000000"].children, fn id ->
@@ -100,6 +103,9 @@ defmodule Titticket.Question do
     end
   end
 
+  @doc """
+  Flatten a deeply nested tree to a list of questions.
+  """
   def flatten(questions, mapper \\ fn question -> Question.cast(question) end) do
     try do
       { roots, rest } = Enum.unzip(Enum.map(questions, fn question ->
@@ -140,6 +146,9 @@ defmodule Titticket.Question do
     end
   end
 
+  @doc """
+  Count the purchases for a specific question.
+  """
   def purchases(id) do
     import Ecto.Query
 
