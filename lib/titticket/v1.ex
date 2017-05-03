@@ -30,7 +30,9 @@ defmodule Titticket.V1 do
             Repo.all(Event.orders(event))
           end
 
-          %{ opens:  event.opens,
+          %{ id: event.id,
+
+             opens:  event.opens,
              closes: event.closes,
 
              title:       event.title,
@@ -135,7 +137,10 @@ defmodule Titticket.V1 do
         do
           purchased = Repo.one(Ticket.purchases(ticket))
 
-          %{ opens:  ticket.opens || ticket.event.opens,
+          %{ id:    ticket.id,
+             event: ticket.event_id,
+
+             opens:  ticket.opens || ticket.event.opens,
              closes: ticket.closes || ticket.event.closes,
 
              title:       ticket.title,
@@ -222,8 +227,12 @@ defmodule Titticket.V1 do
     resource :order do
       # Get an order.
       get id do
-        if order = Repo.get(Order, id) |> Repo.preload(purchases: [:ticket, :order]) do
-          %{ event:     order.event_id,
+        with :authorized             <- can?({ :see, :order, id }),
+             order when order != nil <- Repo.get(Order, id) |> Repo.preload(purchases: [:ticket, :order])
+        do
+          %{ id:    order.id,
+             event: order.event_id,
+
              total:     Order.total(order),
              confirmed: order.confirmed,
 
@@ -234,7 +243,11 @@ defmodule Titticket.V1 do
                   answers:    if(:authorized == can?({ :see, :answers, purchase.id }), do: purchase.answers, else: %{}) }
              end) }
         else
-          fail 404
+          :unauthorized ->
+            fail 401
+
+          nil ->
+            fail 404
         end
       end
 
