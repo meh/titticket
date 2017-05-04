@@ -33,25 +33,27 @@ defmodule Titticket.Event do
 
   @spec output(t, Authorization.t, Authorization.t) :: map
   def output(event, tickets, orders) do
-    tickets = if tickets == :authorized do
-      Repo.all(tickets(event))
+    with { :ok, questions } <- Question.unflatten(event.questions),
+         tickets            <- if(tickets == :authorized, do: Repo.all(tickets(event))),
+         orders             <- if(orders == :authorized, do: Repo.all(orders(event)))
+    do
+      { :ok, %{
+        id:      event.id,
+        tickets: tickets,
+        orders:  orders,
+
+        opens:  event.opens,
+        closes: event.closes,
+
+        title:       event.title,
+        description: event.description,
+        status:      event.status,
+
+        questions: questions } }
+    else
+      :error ->
+        :error
     end
-
-    orders = if orders == :authorized do
-      Repo.all(orders(event))
-    end
-
-    { :ok, %{
-      id:      event.id,
-      tickets: tickets,
-      orders:  orders,
-
-      opens:  event.opens,
-      closes: event.closes,
-
-      title:       event.title,
-      description: event.description,
-      status:      event.status } }
   end
 
   def create(params \\ %{}) do
