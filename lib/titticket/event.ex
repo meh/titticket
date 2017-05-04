@@ -67,8 +67,7 @@ defmodule Titticket.Event do
     import Ecto.Query
 
     from t in Event,
-      where:  t.status != ^:inactive,
-      select: t.id
+      where: t.status != ^:inactive
   end
 
   def tickets(event) do
