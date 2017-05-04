@@ -398,10 +398,17 @@ defmodule Titticket.V1 do
                 id:    payment,
                 payer: payer } }))
 
-            order.id
+            redirect String.replace(
+              Application.get_env(:titticket, :paypal)[:success],
+              ":order",
+              to_string(order.id))
           else
             Logger.error "PayPal payment failed for order #{order.id}"
-            fail 401
+
+            redirect String.replace(
+              Application.get_env(:titticket, :paypal)[:failure],
+              ":order",
+              to_string(order.id))
           end
         end
       end
@@ -415,7 +422,10 @@ defmodule Titticket.V1 do
 
           Repo.delete!(order)
 
-          order.id
+          redirect String.replace(
+            Application.get_env(:titticket, :paypal)[:cancel],
+            ":order",
+            to_string(order.id))
         end
       end
     end

@@ -24,6 +24,10 @@ config :titticket,
 config :titticket, :paypal,
   currency: :EUR,
 
+  success: "https://example.com/order/:order/executed",
+  failure: "https://example.com/order/:order/cancelled",
+  cancel:  "https://example.com/order/:order/cancel",
+
   id:     "fill-me",
   secret: "fill-me",
 
