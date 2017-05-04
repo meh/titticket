@@ -77,16 +77,27 @@ defmodule Titticket.Pay.Paypal do
   Request a new payment.
   """
   def create(order) do
-    total  = Order.total(order, :paypal)
+    currency = Application.get_env(:titticket, :paypal)[:currency]
+    total    = Order.total(order, :paypal)
+
     result = HTTP.post!("#{url}/payments/payment", Poison.encode!(%{
       intent: :sale,
       payer:  %{payment_method: :paypal},
 
       transactions: [%{
-        description: order.event.title,
+        description: order.event.title |> String.slice(0, 127),
+
+        item_list: %{
+          items: Enum.map(order.purchases, fn purchase ->
+            %{ quantity:    1,
+               price:       Purchase.total(purchase, :paypal),
+               currency:    currency,
+               name:        purchase.ticket.title |> String.slice(0, 127),
+               description: purchase.ticket.description |> String.slice(0, 127) }
+          end) },
 
         amount: %{
-          currency: Application.get_env(:titticket, :paypal)[:currency],
+          currency: currency,
           details:  %{ tax: "0", subtotal: total },
           total:    total } }],
 
