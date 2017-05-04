@@ -12,7 +12,7 @@ defmodule Titticket.Purchase do
 
   alias Titticket.{Ticket, Payment, Answer, Order}
 
-  @primary_key { :id, :binary_id, autogenerate: true }
+  @primary_key { :id, Ecto.UUID, autogenerate: true }
   schema "purchases" do
     timestamps()
 
