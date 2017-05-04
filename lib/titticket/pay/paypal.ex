@@ -77,6 +77,7 @@ defmodule Titticket.Pay.Paypal do
   Request a new payment.
   """
   def create(order) do
+    total  = Order.total(order, :paypal)
     result = HTTP.post!("#{url}/payments/payment", Poison.encode!(%{
       intent: :sale,
       payer:  %{payment_method: :paypal},
@@ -86,7 +87,8 @@ defmodule Titticket.Pay.Paypal do
 
         amount: %{
           currency: Application.get_env(:titticket, :paypal)[:currency],
-          total:    Order.total(order, :paypal) } }],
+          details:  %{ tax: "0", subtotal: total },
+          total:    total } }],
 
       redirect_urls: %{
         return_url: "#{Application.get_env(:titticket, :base)}/v1/paypal/done",
