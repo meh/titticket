@@ -13,7 +13,7 @@ config :titticket, Titticket.Repo,
 # Address and port to listen on.
 config :titticket,
   host: "127.0.0.1",
-  port: 8080
+  port: 8080,
   base: "https://example.com"
 
 # Shared secret for authentication.
