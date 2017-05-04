@@ -40,7 +40,7 @@ defmodule Titticket.Event do
     import Ecto.Query
 
     from t in Ticket,
-      where:  t.event_id == ^event.id,
+      where:  t.event_id == ^event.id and t.status != ^:inactive,
       select: t.id
   end
 
@@ -50,5 +50,18 @@ defmodule Titticket.Event do
     from o in Order,
       where:  o.event_id == ^event.id,
       select: o.id
+  end
+
+  def json(event, tickets, orders) do
+    %{ id:      event.id,
+       tickets: tickets,
+       orders:  orders,
+
+       opens:  event.opens,
+       closes: event.closes,
+
+       title:       event.title,
+       description: event.description,
+       status:      event.status }
   end
 end

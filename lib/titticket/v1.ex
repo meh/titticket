@@ -16,6 +16,36 @@ defmodule Titticket.V1 do
   import Titticket.Authorization
 
   namespace :v1 do
+    resource :query do
+      resource :event do
+        get do
+          with :authorized <- can?({ :query, :event }) do
+            case param("by") do
+              nil ->
+                Enum.map Repo.all(Event), fn event ->
+                  tickets = if :authorized == can?({ :see, :event, event.id, :tickets }) do
+                    Repo.all(Event.tickets(event))
+                  end
+
+                  orders = if :authorized == can?({ :see, :event, event.id, :orders }) do
+                    Repo.all(Event.orders(event))
+                  end
+
+                  Event.json(event, tickets, orders)
+                end
+
+              _ ->
+                fail 422
+            end
+
+          else
+            :unauthorized ->
+              fail 401
+          end
+        end
+      end
+    end
+
     resource :event do
       # Get an event.
       get id, as: Integer do
@@ -30,16 +60,7 @@ defmodule Titticket.V1 do
             Repo.all(Event.orders(event))
           end
 
-          %{ id:      event.id,
-             tickets: tickets,
-             orders:  orders,
-
-             opens:  event.opens,
-             closes: event.closes,
-
-             title:       event.title,
-             description: event.description,
-             status:      event.status }
+          Event.json(event, tickets, orders)
         else
           :unauthorized ->
             fail 401
