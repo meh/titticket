@@ -9,7 +9,9 @@
 defmodule Titticket.Event do
   use Ecto.Schema
   use Titticket.Changeset
-  alias Titticket.{Status, Ticket, Order}
+
+  alias __MODULE__
+  alias Titticket.{Repo, Status, Ticket, Order, Authorization}
 
   schema "events" do
     timestamps()
@@ -25,6 +27,31 @@ defmodule Titticket.Event do
     has_many :orders, Order
   end
 
+  @type t :: %__MODULE__{}
+
+  @spec output(t, Authorization.t, Authorization.t) :: map
+  def output(event, tickets, orders) do
+    tickets = if tickets == :authorized do
+      Repo.all(tickets(event))
+    end
+
+    orders = if orders == :authorized do
+      Repo.all(orders(event))
+    end
+
+    { :ok, %{
+      id:      event.id,
+      tickets: tickets,
+      orders:  orders,
+
+      opens:  event.opens,
+      closes: event.closes,
+
+      title:       event.title,
+      description: event.description,
+      status:      event.status } }
+  end
+
   def create(params \\ %{}) do
     %__MODULE__{}
     |> cast(params, [:opens, :closes, :title, :description, :status])
@@ -34,6 +61,14 @@ defmodule Titticket.Event do
   def change(event, params \\ {}) do
     event
     |> cast(params, [:opens, :closes, :title, :description, :status])
+  end
+
+  def available do
+    import Ecto.Query
+
+    from t in Event,
+      where:  t.status != ^:inactive,
+      select: t.id
   end
 
   def tickets(event) do
@@ -50,18 +85,5 @@ defmodule Titticket.Event do
     from o in Order,
       where:  o.event_id == ^event.id,
       select: o.id
-  end
-
-  def json(event, tickets, orders) do
-    %{ id:      event.id,
-       tickets: tickets,
-       orders:  orders,
-
-       opens:  event.opens,
-       closes: event.closes,
-
-       title:       event.title,
-       description: event.description,
-       status:      event.status }
   end
 end

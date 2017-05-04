@@ -7,6 +7,8 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule Titticket.Authorization do
+  @type t :: :authorized | :unathorized
+
   defmacro can?(what) do
     quote do
       if header("X-Access-Token") == Application.get_env(:titticket, :secret) do

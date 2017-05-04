@@ -11,7 +11,7 @@ defmodule Titticket.Ticket do
   use Titticket.Changeset
 
   alias __MODULE__
-  alias Titticket.{Status, Payment, Question, Event, Purchase}
+  alias Titticket.{Repo, Status, Payment, Question, Event, Purchase}
 
   schema "tickets" do
     timestamps()
@@ -29,6 +29,54 @@ defmodule Titticket.Ticket do
 
     belongs_to :event, Event
     has_many :purchases, Purchase
+  end
+
+  @type t :: %__MODULE__{}
+
+  @spec output(t) :: map
+  def output(ticket) do
+    prepare = fn questions ->
+      Question.unflatten questions, fn %Question{ id: id, amount: amount } = question ->
+        case Question.dump(question) do
+          { :ok, question } ->
+            question = if amount do
+              question |> Map.put("amount", %{
+                purchased: Repo.one(Question.purchases(id)),
+                max:       amount })
+            else
+              question
+            end
+
+            { :ok, question }
+
+          :error ->
+            :error
+        end
+      end
+    end
+
+    with { :ok, status }    <- Ecto.Type.dump(Status, ticket.status),
+         { :ok, payment }   <- Ecto.Type.dump({ :array, Payment }, ticket.payment),
+         { :ok, questions } <- prepare.(ticket.questions),
+         purchases          <- Repo.one(purchases(ticket))
+    do
+      { :ok, %{ id:    ticket.id,
+         event: ticket.event_id,
+
+         opens:  ticket.opens || ticket.event.opens,
+         closes: ticket.closes || ticket.event.closes,
+
+         title:       ticket.title,
+         description: ticket.description,
+         status:      status,
+
+         amount:    if(ticket.amount, do: %{purchased: purchases, max: ticket.amount}),
+         payment:   payment,
+         questions: questions } }
+    else
+      :error ->
+        :error
+    end
   end
 
   def create(event, params \\ %{}) do

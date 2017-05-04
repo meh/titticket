@@ -22,16 +22,13 @@ defmodule Titticket.V1 do
           with :authorized <- can?({ :query, :event }) do
             case param("by") do
               nil ->
-                Enum.map Repo.all(Event), fn event ->
-                  tickets = if :authorized == can?({ :see, :event, event.id, :tickets }) do
-                    Repo.all(Event.tickets(event))
+                Enum.map Repo.all(Event.available), fn event ->
+                  with { :ok, output } <- Event.output(event,
+                                                       can?({ :see, :event, event.id, :tickets }),
+                                                       can?({ :see, :event, event.id, :orders }))
+                  do
+                    output
                   end
-
-                  orders = if :authorized == can?({ :see, :event, event.id, :orders }) do
-                    Repo.all(Event.orders(event))
-                  end
-
-                  Event.json(event, tickets, orders)
                 end
 
               _ ->
@@ -50,17 +47,12 @@ defmodule Titticket.V1 do
       # Get an event.
       get id, as: Integer do
         with :authorized             <- can?({ :see, :event, id }),
-             event when event != nil <- Repo.get(Event, id)
+             event when event != nil <- Repo.get(Event, id),
+             { :ok, output }         <- Event.output(event,
+                                                     can?({ :see, :event, event.id, :tickets }),
+                                                     can?({ :see, :event, event.id, :orders }))
         do
-          tickets = if :authorized == can?({ :see, :event, id, :tickets }) do
-            Repo.all(Event.tickets(event))
-          end
-
-          orders = if :authorized == can?({ :see, :event, id, :orders }) do
-            Repo.all(Event.orders(event))
-          end
-
-          Event.json(event, tickets, orders)
+          output
         else
           :unauthorized ->
             fail 401
@@ -133,44 +125,11 @@ defmodule Titticket.V1 do
     resource :ticket do
       # Get a ticket.
       get id, as: Integer do
-        prepare = fn questions ->
-          Question.unflatten questions, fn %Question{ id: id, amount: amount } = question ->
-            case Question.dump(question) do
-              { :ok, question } ->
-                purchased = if amount do
-                  Repo.one(Question.purchases(id))
-                end
-
-                { :ok, question
-                  |> Map.put("amount", %{ purchased: purchased, max: amount }) }
-
-              :error ->
-                :error
-            end
-          end
-        end
-
         with :authorized               <- can?({ :see, :ticket, id }),
              ticket when ticket != nil <- Repo.get(Ticket, id) |> Repo.preload(:event),
-             { :ok, status }           <- Ecto.Type.dump(Status, ticket.status),
-             { :ok, payment }          <- Ecto.Type.dump({ :array, Payment }, ticket.payment),
-             { :ok, questions }        <- prepare.(ticket.questions)
+             { :ok, output }           <- Ticket.output(ticket)
         do
-          purchased = Repo.one(Ticket.purchases(ticket))
-
-          %{ id:    ticket.id,
-             event: ticket.event_id,
-
-             opens:  ticket.opens || ticket.event.opens,
-             closes: ticket.closes || ticket.event.closes,
-
-             title:       ticket.title,
-             description: ticket.description,
-             status:      status,
-
-             amount:    %{purchased: purchased, max: ticket.amount},
-             payment:   payment,
-             questions: questions }
+          output
         else
           :error ->
             fail 500
