@@ -9,7 +9,7 @@ defmodule Titticket.Repo.Migrations.CreateEvents do
       add :closes, :date
 
       add :title, :string
-      add :description, :string
+      add :description, :text
       add :status, :integer
     end
   end
