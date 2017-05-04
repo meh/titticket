@@ -113,7 +113,7 @@ defmodule Titticket.Pay.Paypal do
   Finalize a payment.
   """
   def execute(id, payer) do
-    HTTP.post!("#{url}/payments/payment/#{id}", Poison.encode!(%{
+    HTTP.post!("#{url}/payments/payment/#{id}/execute", Poison.encode!(%{
       payer_id: payer }), headers) |> parse
   end
 
