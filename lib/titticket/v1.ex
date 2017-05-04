@@ -215,12 +215,17 @@ defmodule Titticket.V1 do
 
              total:     Order.total(order),
              confirmed: order.confirmed,
+             answers:   if(:authorized == can?({ :see, :order, order.id, :answers }),
+                          do:   order.answers,
+                          else: %{}),
 
              purchases: Enum.map(order.purchases, fn purchase ->
                %{ ticket:     purchase.ticket_id,
                   identifier: purchase.identifier,
                   total:      Purchase.total(purchase),
-                  answers:    if(:authorized == can?({ :see, :answers, purchase.id }), do: purchase.answers, else: %{}) }
+                  answers:    if(:authorized == can?({ :see, :purchase, purchase.id, :answers }),
+                                 do:   purchase.answers,
+                                 else: %{}) }
              end) }
         else
           :unauthorized ->

@@ -9,6 +9,7 @@ defmodule Titticket.Repo.Migrations.CreateOrders do
 
       add :confirmed, :boolean
       add :payment, :map
+      add :answers, { :map, :map }
 
       add :event_id, references(:events)
     end

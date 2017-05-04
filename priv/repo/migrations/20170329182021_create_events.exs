@@ -11,6 +11,8 @@ defmodule Titticket.Repo.Migrations.CreateEvents do
       add :title, :string
       add :description, :text
       add :status, :integer
+
+      add :questions, { :map, :map }
     end
   end
 end

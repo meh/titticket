@@ -11,7 +11,7 @@ defmodule Titticket.Order do
   use Titticket.Changeset
 
   alias __MODULE__
-  alias Titticket.{Event, Purchase, Payment}
+  alias Titticket.{Event, Purchase, Payment, Answer}
 
   @primary_key { :id, Ecto.UUID, autogenerate: true }
   schema "orders" do
@@ -19,6 +19,7 @@ defmodule Titticket.Order do
 
     field :confirmed, :boolean, default: false
     field :payment, Payment.Details
+    field :answers, { :map, Answer }
 
     belongs_to :event, Event
     has_many :purchases, Purchase, on_delete: :delete_all
@@ -27,6 +28,8 @@ defmodule Titticket.Order do
   def create(event, params \\ %{}) do
     %__MODULE__{}
     |> cast(params, [:confirmed, :payment])
+    |> cast_answers(params["answers"])
+    |> validate_answers(:answers, event.questions)
     |> put_assoc(:event, event)
   end
 
