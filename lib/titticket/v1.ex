@@ -392,31 +392,41 @@ defmodule Titticket.V1 do
     namespace :paypal do
       resource :done do
         get do
-          payment  = query("paymentId")
-          payer    = query("PayerID")
-          response = Pay.Paypal.execute!(payment, payer)
-          order    = Repo.one(Order.for_paypal(payment))
+          payment = query("paymentId")
+          payer   = query("PayerID")
+          order   = Repo.one(Order.for_paypal(payment))
 
-          if response["state"] == "approved" do
-            Logger.info "PayPal payment executed for order #{order.id}"
+          case Pay.Paypal.execute(payment, payer) do
+            { :ok, response } ->
+              if response["state"] == "approved" do
+                Logger.info "PayPal payment executed for order #{order.id}"
 
-            Repo.update!(order
-              |> Order.confirm
-              |> Order.payment(%{ order.payment | details: %{
-                id:    payment,
-                payer: payer } }))
+                Repo.update!(order
+                  |> Order.confirm
+                  |> Order.payment(%{ order.payment | details: %{
+                    id:    payment,
+                    payer: payer } }))
 
-            redirect String.replace(
-              Application.get_env(:titticket, :paypal)[:success],
-              ":order",
-              to_string(order.id))
-          else
-            Logger.error "PayPal payment failed for order #{order.id}"
+                redirect String.replace(
+                  Application.get_env(:titticket, :paypal)[:success],
+                  ":order",
+                  to_string(order.id))
+              else
+                Logger.error "PayPal payment failed for order #{order.id}"
 
-            redirect String.replace(
-              Application.get_env(:titticket, :paypal)[:failure],
-              ":order",
-              to_string(order.id))
+                redirect String.replace(
+                  Application.get_env(:titticket, :paypal)[:failure],
+                  ":order",
+                  to_string(order.id))
+              end
+
+            { :error, code, reason } ->
+              Logger.error "PayPal payment failed for order #{order.id} (#{code} #{reason})"
+
+              redirect String.replace(
+                Application.get_env(:titticket, :paypal)[:failure],
+                ":order",
+                to_string(order.id))
           end
         end
       end
