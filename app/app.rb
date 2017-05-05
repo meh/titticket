@@ -22,7 +22,7 @@ class Boobing < Lissio::Application
 
 			Events.fetch.then {|events|
 				load Page::Index.new(events)
-			}.fail {|e| $console.log [e, e.backtrace].inspect }
+			}
 		end
 
 		route '/italian-embassy-2017' do
@@ -36,7 +36,7 @@ class Boobing < Lissio::Application
 				Promise.when(*event.tickets.map { |id| Ticket.fetch(id) })
 			}.trace { |event, tickets|
 				load Page::Event.new(event, tickets)
-			}.fail { |e| $console.log [e, e.backtrace].inspect }
+			}
 		end
 
 		route '/ticket/:id' do |params|
@@ -48,19 +48,19 @@ class Boobing < Lissio::Application
 		route '/order/:id/success' do |params|
 			Order.fetch(params[:id]).then {|order|
 				load Page::Order::Success.new(order)
-			}.fail {|e| $console.log [e, e.backtrace].inspect }
+			}
 		end
 
 		route '/order/:id/failure' do |params|
 			Order.fetch(params[:id]).then {|order|
 				load Page::Order::Failure.new(order)
-			}.fail {|e| $console.log [e, e.backtrace].inspect }
+			}
 		end
 
 		route '/order/:id/cancel' do |params|
 			Order.fetch(params[:id]).then {|order|
 				load Page::Order::Cancel.new(order)
-			}.fail {|e| $console.log [e, e.backtrace].inspect }
+			}
 		end
 	end
 
