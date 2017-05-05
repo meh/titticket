@@ -318,6 +318,11 @@ class Page
 						display :block
 					end
 
+					rule 'label[data-required="true"]::after' do
+						content '"*"'
+						margin left: 0.5.em
+					end
+
 					rule '& > .question' do
 						margin bottom: 1.em
 					end
@@ -337,22 +342,14 @@ class Page
 					on :render do
 						element >> DOM { |_|
 							_.div.question do
-								_.label.for(:identifier).data(required: true) do
-									_ << "Nome o Nick "
-									_.sup.secondary "*"
-								end
-
+								_.label.for(:identifier).text("Nome o Nick").data(required: true)
 								_.input.identifier!.type(:text)
 							end
 						}
 
 						element >> DOM { |_|
 							_.div.question do
-								_.label.for(:email).data(required: true) do
-									_ << "E-Mail "
-									_.sup.secondary "*"
-								end
-
+								_.label.for(:email).text("E-Mail").data(required: true)
 								_.input.email!.type(:email)
 							end
 						}
