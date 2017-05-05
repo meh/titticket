@@ -203,7 +203,7 @@ class Page
 						else
 							payment.price!.value
 						end
-					}.reduce(0, :+)
+					}.reduce(0, :+).round(2)
 				end
 
 				# FIXME: This will explode with required nested questions.
