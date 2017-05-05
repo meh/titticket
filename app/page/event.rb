@@ -352,6 +352,8 @@ class Page
 									_ << "E-Mail "
 									_.sup.secondary "*"
 								end
+
+								_.input.email!.type(:email)
 							end
 						}
 					end
