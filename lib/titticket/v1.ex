@@ -404,7 +404,7 @@ defmodule Titticket.V1 do
                   |> Order.confirm
                   |> Order.payment(%{ order.payment | details: %{
                     id:    payment,
-                    payer: payer } }))
+                    payer: response["payer"] } }))
 
                 redirect String.replace(
                   Application.get_env(:titticket, :paypal)[:success],
@@ -412,6 +412,8 @@ defmodule Titticket.V1 do
                   to_string(order.id))
               else
                 Logger.error "PayPal payment failed for order #{order.id}"
+
+                Repo.delete!(order)
 
                 redirect String.replace(
                   Application.get_env(:titticket, :paypal)[:failure],
@@ -421,6 +423,8 @@ defmodule Titticket.V1 do
 
             { :error, code, reason } ->
               Logger.error "PayPal payment failed for order #{order.id} (#{code} #{inspect(reason)})"
+
+              Repo.delete!(order)
 
               redirect String.replace(
                 Application.get_env(:titticket, :paypal)[:failure],
