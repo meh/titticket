@@ -225,7 +225,6 @@ defmodule Titticket.V1 do
 
              purchases: Enum.map(order.purchases, fn purchase ->
                %{ ticket:     purchase.ticket_id,
-                  identifier: purchase.identifier,
                   total:      Purchase.total(purchase),
                   answers:    if(:authorized == can?({ :see, :purchase, purchase.id, :answers }),
                                  do:   purchase.answers,
