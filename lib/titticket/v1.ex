@@ -213,11 +213,15 @@ defmodule Titticket.V1 do
           %{ id:    order.id,
              event: order.event_id,
 
-             total:     Order.total(order),
-             confirmed: order.confirmed,
-             answers:   if(:authorized == can?({ :see, :order, order.id, :answers }),
-                          do:   order.answers,
-                          else: %{}),
+             total:      Order.total(order),
+             identifier: if(not order.private or :authorized == can?({ :see, :order, order.id, :identifier }), do: order.identifier),
+             email:      if(:authorized == can?({ :see, :order, order.id, :email }), do: order.email),
+             private:    order.private,
+             confirmed:  order.confirmed,
+
+             answers: if(:authorized == can?({ :see, :order, order.id, :answers }),
+                        do:   order.answers,
+                        else: %{}),
 
              purchases: Enum.map(order.purchases, fn purchase ->
                %{ ticket:     purchase.ticket_id,
@@ -253,11 +257,11 @@ defmodule Titticket.V1 do
           end
 
           # Create purchases.
-          purchases = fn payment, event, order, tickets ->
+          purchases = fn event, order, tickets ->
             try do
               purchases = Enum.map tickets, fn current ->
                 with ticket when ticket != nil <- Repo.get(Ticket, current["id"]),
-                     :ok                       <- if(Enum.find(ticket.payment, &(&1.type == payment)), do: :ok, else: :no_payment),
+                     :ok                       <- if(Enum.find(ticket.payment, &(&1.type == order.payment.type)), do: :ok, else: :no_payment),
                      true                      <- ticket.event_id == event.id,
                      :active                   <- ticket.status || event.status,
                      { :ok, purchase }         <- Repo.insert(Purchase.create(order, ticket, current)),
@@ -295,11 +299,10 @@ defmodule Titticket.V1 do
           with :authorized             <- can?({ :create, :order, param("event") }),
                event when event != nil <- Repo.get(Event, param("event")),
                :active                 <- event.status,
-               { :ok, order }          <- Repo.insert(Order.create(event)),
-               { :ok, payment }        <- Payment.Type.cast(param("payment")["type"]),
-               { :ok, _ }              <- purchases.(payment, event, order, param("tickets"))
+               { :ok, order }          <- Repo.insert(Order.create(event, params())),
+               { :ok, _ }              <- purchases.(event, order, param("tickets"))
           do
-            { action, details } = case payment do
+            { action, details } = case order.payment.type do
               :paypal ->
                 response = Pay.Paypal.create!(order |> Repo.preload([:event, purchases: :ticket]))
 
@@ -311,7 +314,7 @@ defmodule Titticket.V1 do
             end
 
             Repo.update!(order
-              |> Order.payment(%Payment.Details{ type: payment, details: details }))
+              |> Order.payment(%Payment.Details{ order.payment | details: details }))
 
             %{ order:  order.id,
                action: action }

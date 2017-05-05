@@ -7,7 +7,11 @@ defmodule Titticket.Repo.Migrations.CreateOrders do
 
       add :id, :uuid, primary_key: true
 
+      add :identifier, :string
+      add :email, :string
+      add :private, :boolean
       add :confirmed, :boolean
+
       add :payment, :map
       add :answers, { :map, :map }
 

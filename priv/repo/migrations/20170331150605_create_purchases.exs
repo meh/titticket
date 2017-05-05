@@ -6,9 +6,6 @@ defmodule Titticket.Repo.Migrations.CreatePurchases do
       timestamps()
 
       add :id, :uuid, primary_key: true
-
-      add :identifier, :string
-      add :private, :boolean
       add :answers, { :map, :map }
 
       add :ticket_id, references(:tickets)

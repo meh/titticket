@@ -17,7 +17,11 @@ defmodule Titticket.Order do
   schema "orders" do
     timestamps()
 
+    field :identifier, :string
+    field :email, :string
+    field :private, :boolean, default: false
     field :confirmed, :boolean, default: false
+
     field :payment, Payment.Details
     field :answers, { :map, Answer }
 
@@ -27,7 +31,8 @@ defmodule Titticket.Order do
 
   def create(event, params \\ %{}) do
     %__MODULE__{}
-    |> cast(params, [:confirmed, :payment])
+    |> cast(params, [:identifier, :email, :private, :confirmed, :payment])
+    |> validate_required([:identifier, :email])
     |> cast_answers(params["answers"])
     |> validate_answers(:answers, event.questions)
     |> put_assoc(:event, event)

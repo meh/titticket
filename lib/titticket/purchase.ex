@@ -16,8 +16,6 @@ defmodule Titticket.Purchase do
   schema "purchases" do
     timestamps()
 
-    field :identifier, :string
-    field :private, :boolean, default: false
     field :answers, { :map, Answer }
 
     belongs_to :ticket, Ticket
@@ -26,9 +24,8 @@ defmodule Titticket.Purchase do
 
   def create(order, ticket, params \\ %{}) do
     %__MODULE__{}
-    |> cast(params, [:identifier, :private])
+    |> cast(params, [])
     |> cast_answers(params["answers"])
-    |> validate_required([:identifier])
     |> validate_answers(:answers, ticket.questions)
     |> put_assoc(:order, order)
     |> put_assoc(:ticket, ticket)
