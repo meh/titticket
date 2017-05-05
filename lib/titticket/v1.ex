@@ -420,7 +420,7 @@ defmodule Titticket.V1 do
               end
 
             { :error, code, reason } ->
-              Logger.error "PayPal payment failed for order #{order.id} (#{code} #{reason})"
+              Logger.error "PayPal payment failed for order #{order.id} (#{code} #{inspect(reason)})"
 
               redirect String.replace(
                 Application.get_env(:titticket, :paypal)[:failure],
