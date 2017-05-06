@@ -11,6 +11,7 @@ defmodule Titticket.V1 do
     allow:    [headers: true, methods: true, credentials: true],
     adapters: [Urna.JSON, Urna.Form]
 
+  import Ecto.Query
   require Logger
   alias Titticket.{Repo, Changeset, Status, Event, Ticket, Order, Purchase, Payment, Question, Answer, Pay}
   import Titticket.Authorization
@@ -20,7 +21,7 @@ defmodule Titticket.V1 do
       resource :event do
         get do
           with :authorized <- can?({ :query, :event }) do
-            case param("by") do
+            case query("q") do
               nil ->
                 Enum.map Repo.all(Event.available), fn event ->
                   with { :ok, output } <- Event.output(event,
@@ -31,10 +32,23 @@ defmodule Titticket.V1 do
                   end
                 end
 
+              "people" ->
+                with id when is_binary(id) <- query("id"),
+                     { id, _ }             <- Integer.parse(id)
+                do
+                  Repo.all(from o in Order,
+                    distinct: true,
+                    where:    o.event_id == ^id and not o.private,
+                    order_by: o.identifier,
+                    select:   o.identifier)
+                else
+                  _ ->
+                    fail 422
+                end
+
               _ ->
                 fail 422
             end
-
           else
             :unauthorized ->
               fail 401
