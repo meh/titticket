@@ -42,8 +42,12 @@ class Boobing < Lissio::Application
 		route '/event/:id/people' do |params|
 			loading!
 
-			HTTP.get("#{REST::URL}/v1/query/event?q=people&id=#{params[:id]}").then {|res|
-				load Page::Event::People.new(res.json)
+			Event.fetch(params[:id].to_i).then {|event|
+				Promise.when(*event.tickets.map { |id| Ticket.fetch(id) })
+			}.then {
+				Browser::HTTP.get("#{REST::URL}/v1/query/event?q=people&id=#{params[:id]}")
+			}.trace { |event, tickets, people|
+				load Page::Event::People.new(event, tickets, people.json)
 			}
 		end
 

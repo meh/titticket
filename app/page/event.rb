@@ -433,5 +433,29 @@ class Page
 				end
 			end
 		end
+
+		class People < Page
+			Header = Event::Header
+
+			class Content < Lissio::Component
+				def initialize(event, tickets, people)
+					@people = people
+				end
+
+				html do |_|
+					@people.each_slice(6) do |people|
+						_.div.row do
+							people.each do |name|
+								_.div.col[:sm, "3"].do {
+									_.div.card.fluid do
+										_.div.section name
+									end
+								}
+							end
+						end
+					end
+				end
+			end
+		end
 	end
 end
