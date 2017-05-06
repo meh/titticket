@@ -39,6 +39,14 @@ class Boobing < Lissio::Application
 			}
 		end
 
+		route '/event/:id/people' do |params|
+			loading!
+
+			HTTP.get("#{REST::URL}/v1/query/event?q=people&id=#{params[:id]}").then {|res|
+				load Page::Event::People.new(res.json)
+			}
+		end
+
 		route '/ticket/:id' do |params|
 			Ticket.fetch(params[:id].to_i).then {|ticket|
 				element.content = ticket.inspect
@@ -51,16 +59,12 @@ class Boobing < Lissio::Application
 			}
 		end
 
-		route '/order/:id/failure' do |params|
-			Order.fetch(params[:id]).then {|order|
-				load Page::Order::Failure.new(order)
-			}
+		route '/order/failure' do
+			load Page::Order::Failure.new
 		end
 
-		route '/order/:id/cancel' do |params|
-			Order.fetch(params[:id]).then {|order|
-				load Page::Order::Cancel.new(order)
-			}
+		route '/order/cancel' do
+			load Page::Order::Cancel.new
 		end
 	end
 

@@ -20,8 +20,12 @@ class Page
 			end
 
 			content <<-MD.gsub(/^\t{4}/m, '')
-				Fuffa
-				=====
+				ItalianGrappa Ticketing System (*BETA*, anzi, **BETISSIMA**)
+				============================================================
+				I sorci sono rossi, [backend](https://github.com/meh/titticket) e
+				[frontend](https://github.com/meh/boobing).
+
+				Se trovate cose brutte, aprite un issue nel repo appropriato.
 			MD
 		end
 	end

@@ -10,14 +10,6 @@ class Page
 		@header.trigger!(*args)
 		@content.trigger!(*args)
 	end
-
-	module Header
-		class None < Lissio::Component
-			on :render do
-				$document['header'].remove
-			end
-		end
-	end
 end
 
 require 'page/index'

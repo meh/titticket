@@ -273,23 +273,23 @@ class Page
 							# TODO: remove this once it's implemented
 							if type == :wire
 								_.button.disabled!.data(type: type) do
-									_ << "Compra con #{type!(type)} "
+									_ << "Paga con #{type!(type)} "
 									_.strong "#{value}€"
 								end
 							elsif valid?
 								_.button.tertiary.data(type: type) do
-									_ << "Compra con #{type!(type)} "
+									_ << "Paga con #{type!(type)} "
 									_.strong "#{value}€"
 								end
 							else
 								_.button.secondary.data(type: type) do
-									_ << "Compra con #{type!(type)} "
+									_ << "Paga con #{type!(type)} "
 									_.strong "#{value}€"
 								end
 							end
 						else
 							_.button.disabled!.data(type: type) do
-								_ << "Compra con #{type!(type)} "
+								_ << "Paga con #{type!(type)} "
 								_.strong "0€"
 							end
 						end
