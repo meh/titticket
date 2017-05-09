@@ -87,9 +87,9 @@ defmodule Titticket.Ticket do
     |> put_assoc(:event, event)
   end
 
-  def change(ticket, params \\ %{}) do
+  def update(ticket, params \\ %{}) do
     ticket
-    |> cast(params, [:opens, :closes, :title, :description, :status, :amount, :payment, :questions])
+    |> cast(params, [:opens, :closes, :title, :description, :status, :amount])
   end
 
   def purchases(ticket) do

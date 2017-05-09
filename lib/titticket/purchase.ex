@@ -31,11 +31,6 @@ defmodule Titticket.Purchase do
     |> put_assoc(:ticket, ticket)
   end
 
-  def change(purchase, params \\ %{}) do
-    purchase
-    |> cast(params, [:confirmed])
-  end
-
   def total(purchase) do
     total(purchase, purchase.order.payment.type)
   end

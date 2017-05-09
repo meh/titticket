@@ -98,7 +98,7 @@ defmodule Titticket.V1 do
         Repo.transaction! fn ->
           with :authorized             <- can?({ :change, :event, id }),
                event when event != nil <- Repo.get(Event, id),
-               { :ok, event }          <- Repo.update(event |> Event.change(params()))
+               { :ok, event }          <- Repo.update(event |> Event.update(params()))
           do
             event.id
           else
@@ -180,7 +180,7 @@ defmodule Titticket.V1 do
           with :authorized               <- can?({ :change, :ticket, id }),
                ticket when ticket != nil <- Repo.get(Ticket, id),
                0                         <- Ticket.purchases(ticket),
-               { :ok, ticket }           <- Repo.update(ticket |> Ticket.change(params()))
+               { :ok, ticket }           <- Repo.update(ticket |> Ticket.update(params()))
           do
             ticket.id
           else

@@ -63,7 +63,7 @@ defmodule Titticket.Event do
     |> validate_required([:opens, :title])
   end
 
-  def change(event, params \\ {}) do
+  def update(event, params \\ {}) do
     event
     |> cast(params, [:opens, :closes, :title, :description, :status])
   end
