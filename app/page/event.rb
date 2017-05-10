@@ -371,7 +371,9 @@ class Page
 				end
 
 				on :click, 'button' do |e|
-					return unless valid?
+					return if e.on.disabled? || !valid?
+
+					e.on.disabled = true
 
 					data = {
 						event:   @event.id,
@@ -405,6 +407,8 @@ class Page
 						end
 
 						Titticket.navigate "/order/#{order}/success"
+					}.fail {
+						e.on.disabled = false
 					}
 				end
 
