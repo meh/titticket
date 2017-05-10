@@ -4,12 +4,18 @@ defmodule Titticket.Jobs do
 
   def paypal do
     Enum.each Repo.all(Order.unconfirmed(:paypal)), fn order ->
-      status = Pay.Paypal.status(order.payment["details"]["id"])
+      status = Pay.Paypal.status(order.payment.details["id"])
 
       case status do
-        # The payment is being approved.
+        # The payment is being approved, removed the order if it expired.
         "created" ->
-          nil
+          updated = DateTime.to_unix(DateTime.from_naive!(order.updated_at, "Etc/UTC"))
+          now     = DateTime.to_unix(DateTime.utc_now)
+
+          if now - updated > 60 * 60 do
+            Logger.error "PayPal payment failed for order #{order.id}"
+            Repo.delete!(order)
+          end
 
         # The payment was approved but the redirect failed.
         "approved" ->
