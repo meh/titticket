@@ -39,15 +39,16 @@ defmodule Titticket.Order do
   end
 
   def update(order, params \\ %{}) do
-    order = order |> cast(params, [:identifier, :email, :private, :confirmed])
+    updated = order |> cast(params, [:identifier, :email, :private, :confirmed])
 
-    order = if is_map(params["payment"] || params[:payment]) do
-      order |> put_change(:payment, %Payment.Details{ order.payment | details: params["payment"] || params[:payment] })
+    updated = if is_map(params["payment"] || params[:payment]) do
+      updated |> put_change(:payment, %Payment.Details{ order.payment |
+        details: params["payment"] || params[:payment] })
     else
-      order
+      updated
     end
 
-    order
+    updated
   end
 
   def total(order) do
