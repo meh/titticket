@@ -4,9 +4,9 @@ defmodule Titticket.Jobs do
 
   def paypal do
     Enum.each Repo.all(Order.unconfirmed(:paypal)), fn order ->
-      status = Pay.Paypal.status(order.payment.details["id"])
+      response = Pay.Paypal.status!(order.payment.details["id"])
 
-      case status do
+      case response["state"] do
         # The payment is being approved, removed the order if it expired.
         "created" ->
           updated = DateTime.to_unix(DateTime.from_naive!(order.updated_at, "Etc/UTC"))
