@@ -1,9 +1,18 @@
 class Page
 	class Event < Page
+		def self.load(id)
+			::Event.fetch(id).then {|event|
+				Promise.when(*event.tickets.map { |id| Ticket.fetch(id) })
+			}.then {
+				Browser::HTTP.get("#{REST::URL}/v1/query/event?q=people&id=#{id}").then {|res|
+					res.json
+				}
+			}
+		end
+
 		class Header < Lissio::Component
-			def initialize(event, tickets)
-				@event   = event
-				@tickets = tickets
+			def initialize(event)
+				@event = event
 			end
 
 			on :click, '.button' do |e|
@@ -13,16 +22,20 @@ class Page
 			html do |_|
 				_.a.logo.href("/").text("Italian Grappa")
 
-				@tickets.each do |ticket|
-					_.a.button.text(ticket.title).data(id: ticket.id)
-				end
+				@event.links.each {|link|
+					_.a.button
+						.href(link.href)
+						.target("_blank")
+						.text(link.text)
+				}
 			end
 		end
 
 		class Content < Lissio::Component
-			def initialize(event, tickets)
-				@event    = event
-				@general  = Form::General.new(event)
+			def initialize(event, tickets, people)
+				@event   = event
+				@people  = people
+				@general = Form::General.new(event)
 
 				@tickets  = Hash[tickets.map { |t| [t.id, t] }]
 				@forms    = Hash.new
@@ -62,99 +75,225 @@ class Page
 			end
 
 			html do |_|
-				_.div.card.fluid.inverse.information do
-					_.div.section do
-						_.div.heading do
-							_.h1 @event.title
-
-							_.div.dates do
-								_.span "Dal "
-								_.strong @event.opens.strftime "%-e/%m/%Y"
-
-								if @event.closes
-									_.span " al "
-									_.strong @event.closes.strftime "%-e/%m/%Y"
-								end
-							end
-						end
-					end
-
-					_.div.section do
-						_.div.description do
-							`marked(#{@event.description})`
-						end
-					end
-				end
-
-				_.div.tickets do
-					@tickets.each_value do |ticket|
-						_.div.card.fluid.ticket.data(id: ticket.id) do
+				# Left bar.
+				_.div.people do
+					_.div.col[:sm].do {
+						_.div.card.fluid.inverse do
 							_.div.section do
 								_.div.heading do
-									_.h4 do
-										_ << ticket.title
+									_.h1 "Chi Viene"
+								end
+							end
+						end
 
-										if ticket.description
-											_.small ticket.description
-										end
+						_.table.striped.preset do
+							@people.cycle(48).each do |name|
+								_.tr do
+									_.td name
+								end
+							end
+						end
+					}
+				end
+
+				# Centered content.
+				_.div.content do
+					_.div.card.fluid.inverse.information do
+						_.div.section do
+							_.div.heading do
+								_.h1 @event.title
+
+								_.div.dates do
+									_.span "Dal "
+									_.strong @event.opens.strftime "%-e/%m/%Y"
+
+									if @event.closes
+										_.span " al "
+										_.strong @event.closes.strftime "%-e/%m/%Y"
 									end
+								end
+							end
+						end
 
-									if payment = ticket.payment.find { |p| p.type == :paypal }
-										if beyond = payment.price!.beyond!
-											_.div.price do
-												_.strong "#{payment.price!.value}€"
-												_.span " fino al "
-												_.strong "#{beyond.date.strftime "%-e/%m/%Y"}"
-												_.span " poi "
-												_.strong "#{beyond.value}€"
-											end
-										else
-											_.div.price do
-												_.strong "#{payment.price!.value}€"
+						_.div.section do
+							_.div.description do
+								`marked(#{@event.description})`
+							end
+						end
+					end
+
+					_.div.tickets do
+						@tickets.each_value do |ticket|
+							_.div.card.fluid.ticket.data(id: ticket.id) do
+								_.div.section do
+									_.div.heading do
+										_.h4 do
+											_ << ticket.title
+
+											if ticket.description
+												_.small ticket.description
 											end
 										end
-									end
 
-									_.button.buy do
-										_.i.fa.fa[:shopping, :cart].fa[:lg]
+										if payment = ticket.payment.find { |p| p.type == :paypal }
+											if beyond = payment.price!.beyond!
+												_.div.price do
+													_.strong "#{payment.price!.value}€"
+													_.span " fino al "
+													_.strong "#{beyond.date.strftime "%-e/%m/%Y"}"
+													_.span " poi "
+													_.strong "#{beyond.value}€"
+												end
+											else
+												_.div.price do
+													_.strong "#{payment.price!.value}€"
+												end
+											end
+										end
+
+										_.button.buy do
+											_.i.fa.fa[:shopping, :cart].fa[:lg]
+										end
 									end
 								end
 							end
 						end
 					end
-				end
 
-				_.div.card.fluid.inverse do
-					_.div.section do
-						_ << @general
+					_.div.card.fluid.inverse do
+						_.div.section do
+							_ << @general
+						end
 					end
 				end
 
-				_ << @checkout
+				# Right bar.
+				_.div.checkout do
+					_.div.col[:sm].do {
+						_.div.card.fluid.inverse do
+							_.div.section do
+								_.div.heading do
+									_.h1 "Pagamento"
+								end
+							end
+						end
+
+						_ << @checkout
+					}
+				end
 			end
 
 			css do
+				media '(max-width: 1024px)' do
+					flex flow: :column
+					margin! top: 0
+
+					rule '.people' do
+						order 2
+
+						rule 'table' do
+							width 100.%
+							margin 0
+						end
+					end
+
+					rule '.card' do
+						margin left:  0,
+						       right: 0
+
+						border left: :none,
+						       right: :none
+					end
+
+					rule '.information' do
+						margin top: 0
+					end
+				end
+
+				display :flex
+				flex flow: :row
+				justify content: :center
+				margin top: 1.em
+
 				rule '.heading' do
-					display :flex
-					align items: :center
-
 					rule 'h1', 'h2', 'h3', 'h4' do
-						flex grow: 1
 						margin top:    0,
-						       bottom: 0
+							     bottom: 0
 					end
 				end
 
-				rule '.information' do
-					rule '.description' do
-						padding 1.em, 0.5.em
+				rule '.people' do
+					min width: 14.em
+					padding bottom: 1.em
+
+					rule '.inverse' do
+						z index: 100
+					end
+
+					rule '.col-sm', '.inverse' do
+						media '(min-width: 1024px)' do
+							position :sticky
+							top 'calc(56px + 1em)'
+						end
+					end
+
+					rule 'table' do
+						width 'calc(100% - 1rem)'
+						margin 0.5.rem
 					end
 				end
 
-				rule '.ticket' do
+				rule '.checkout' do
+					min width: 14.em
+
+					rule '.col-sm' do
+						media '(min-width: 1024px)' do
+							position :sticky
+							top 'calc(56px + 1em)'
+						end
+					end
+
+					rule 'button' do
+						width 100.%
+						margin 0
+						margin bottom: 0.5.rem
+						display :flex
+						justify content: 'space-between'
+					end
+
+					rule '.buttons' do
+						margin 0.5.rem
+					end
+				end
+
+				rule '.content' do
+					max width: 1024.px
+
 					rule '.heading' do
-						rule '.buy' do
-							margin left: 1.em
+						display :flex
+						align items: :center
+
+						rule 'h1', 'h2', 'h3', 'h4' do
+							flex grow: 1
+
+							rule 'small' do
+								margin top: 0
+								font size: 0.7.em
+							end
+						end
+					end
+
+					rule '.information' do
+						rule '.description' do
+							padding 1.em, 0.5.em
+						end
+					end
+
+					rule '.ticket' do
+						rule '.heading' do
+							rule '.buy' do
+								margin left: 1.em
+							end
 						end
 					end
 				end
@@ -263,9 +402,11 @@ class Page
 							end
 						end
 
-						Boobing.navigate "/order/#{order}/success"
+						Titticket.navigate "/order/#{order}/success"
 					}
 				end
+
+				tag class: :buttons
 
 				html do |_|
 					types.each do |type|
@@ -273,23 +414,23 @@ class Page
 							# TODO: remove this once it's implemented
 							if type == :wire
 								_.button.disabled!.data(type: type) do
-									_ << "Paga con #{type!(type)} "
+									_ << "#{type!(type)} "
 									_.strong "#{value}€"
 								end
 							elsif valid?
 								_.button.tertiary.data(type: type) do
-									_ << "Paga con #{type!(type)} "
+									_ << "#{type!(type)} "
 									_.strong "#{value}€"
 								end
 							else
-								_.button.secondary.data(type: type) do
-									_ << "Paga con #{type!(type)} "
+								_.button.secondary.disabled!.data(type: type) do
+									_ << "#{type!(type)} "
 									_.strong "#{value}€"
 								end
 							end
 						else
 							_.button.disabled!.data(type: type) do
-								_ << "Paga con #{type!(type)} "
+								_ << "#{type!(type)} "
 								_.strong "0€"
 							end
 						end
@@ -428,30 +569,6 @@ class Page
 							display :block
 							margin left: 1.em,
 							       bottom: 1.em
-						end
-					end
-				end
-			end
-		end
-
-		class People < Page
-			Header = Event::Header
-
-			class Content < Lissio::Component
-				def initialize(event, tickets, people)
-					@people = people
-				end
-
-				html do |_|
-					@people.each_slice(6) do |people|
-						_.div.row do
-							people.each do |name|
-								_.div.col[:sm, "3"].do {
-									_.div.card.fluid do
-										_.div.section name
-									end
-								}
-							end
 						end
 					end
 				end

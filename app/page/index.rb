@@ -22,8 +22,8 @@ class Page
 			content <<-MD.gsub(/^\t{4}/m, '')
 				ItalianGrappa Ticketing System (*BETA*, anzi, **BETISSIMA**)
 				============================================================
-				I sorci sono rossi, [backend](https://github.com/meh/titticket) e
-				[frontend](https://github.com/meh/boobing).
+				I sorci sono rossi, [backend](https://github.com/meh/titticket/tree/backend) e
+				[frontend](https://github.com/meh/titticket/tree/frontend).
 
 				Se trovate cose brutte, aprite un issue nel repo appropriato.
 			MD

@@ -13,7 +13,7 @@ require 'components'
 require 'models'
 require 'pages'
 
-class Boobing < Lissio::Application
+class Titticket < Lissio::Application
 	def initialize
 		super
 
@@ -25,30 +25,12 @@ class Boobing < Lissio::Application
 			}
 		end
 
-		route '/italian-embassy-2017' do
-			router.match '/event/1'
-		end
-
 		route '/event/:id' do |params|
 			loading!
 
-			Event.fetch(params[:id].to_i).then {|event|
-				Promise.when(*event.tickets.map { |id| Ticket.fetch(id) })
-			}.trace { |event, tickets|
-				load Page::Event.new(event, tickets)
-			}
-		end
-
-		route '/event/:id/people' do |params|
-			loading!
-
-			Event.fetch(params[:id].to_i).then {|event|
-				Promise.when(*event.tickets.map { |id| Ticket.fetch(id) })
-			}.then {
-				Browser::HTTP.get("#{REST::URL}/v1/query/event?q=people&id=#{params[:id]}")
-			}.trace { |event, tickets, people|
-				load Page::Event::People.new(event, tickets, people.json)
-			}
+			Page::Event.load(params[:id].to_i).trace {|*args|
+				load Page::Event.new(*args)
+			}.fail { |e| $console.log [e, e.backtrace].inspect }
 		end
 
 		route '/ticket/:id' do |params|
@@ -69,6 +51,10 @@ class Boobing < Lissio::Application
 
 		route '/order/cancel' do
 			load Page::Order::Cancel.new
+		end
+
+		route '/italian-embassy-2017' do
+			router.match '/event/1'
 		end
 	end
 
@@ -105,12 +91,14 @@ class Boobing < Lissio::Application
 	end
 
 	css do
-		rule 'header' do
-			display :none
+		media '(max-width: 1024px)' do
+			rule '& > .container' do
+				padding 0
+			end
 		end
 
-		rule '.container' do
-			max width: 1280.px
+		rule 'header' do
+			display :none
 		end
 	end
 end

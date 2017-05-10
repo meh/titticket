@@ -23,6 +23,7 @@ end
 
 require 'model/amount'
 require 'model/payment'
+require 'model/link'
 
 require 'model/question'
 require 'model/answer'

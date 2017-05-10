@@ -6,6 +6,7 @@ class Event < Lissio::Model
 
 	property :title, as: String
 	property :description, as: String
+	property :links, as: [Link]
 	property :status, as: Symbol
 
 	property :questions, as: [Question]
