@@ -326,7 +326,7 @@ defmodule Titticket.V1 do
                 approval = Enum.find(response["links"], &(&1["rel"] == "approval_url"))["href"]
 
                 { %{ redirect: approval },
-                  %{ id: response["id"], token: URI.decode_query(URI.parse(approval))["token"] } }
+                  %{ id: response["id"], token: URI.decode_query(URI.parse(approval).query)["token"] } }
 
               _ ->
                 { nil, %{} }
