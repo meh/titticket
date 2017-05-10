@@ -87,7 +87,7 @@ class Page
 						end
 
 						_.table.striped.preset do
-							@people.cycle(48).each do |name|
+							@people.each do |name|
 								_.tr do
 									_.td name
 								end
