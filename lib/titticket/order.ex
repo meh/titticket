@@ -41,23 +41,13 @@ defmodule Titticket.Order do
   def update(order, params \\ %{}) do
     order = order |> cast(params, [:identifier, :email, :private, :confirmed])
 
-    order = if is_map(params["details"]) do
-      order |> put_change(:payment, %Payment.Details{ order.payment | details: params["details"] })
+    order = if is_map(params["payment"] || params[:payment]) do
+      order |> put_change(:payment, %Payment.Details{ order.payment | details: params["payment"] || params[:payment] })
     else
       order
     end
 
     order
-  end
-
-  def confirm(order) do
-    order
-    |> change(%{ confirmed: true })
-  end
-
-  def payment(order, payment) do
-    order
-    |> change(%{ payment: payment })
   end
 
   def total(order) do
@@ -69,11 +59,19 @@ defmodule Titticket.Order do
       &Decimal.add(Purchase.total(&1, payment), &2)
   end
 
-  def for_paypal(id) when is_binary(id) do
+  def paypal(id) when is_binary(id) do
     import Ecto.Query
 
     from o in Order,
       where: fragment(~s[? #> '{details,id}' = ?], o.payment, ^id) and
+             fragment(~s[? -> 'type' = ?], o.payment, ^:paypal)
+  end
+
+  def paypal(token: token) when is_binary(token) do
+    import Ecto.Query
+
+    from o in Order,
+      where: fragment(~s[? #> '{details,token}' = ?], o.payment, ^token) and
              fragment(~s[? -> 'type' = ?], o.payment, ^:paypal)
   end
 end

@@ -323,16 +323,17 @@ defmodule Titticket.V1 do
             { action, details } = case order.payment.type do
               :paypal ->
                 response = Pay.Paypal.create!(order |> Repo.preload([:event, purchases: :ticket]))
+                approval = Enum.find(response["links"], &(&1["rel"] == "approval_url"))["href"]
 
-                { %{ redirect: Enum.find(response["links"], &(&1["rel"] == "approval_url"))["href"] },
-                  %{ id:       response["id"] } }
+                { %{ redirect: approval },
+                  %{ id: response["id"], token: URI.decode_query(URI.parse(approval))["token"] } }
 
               _ ->
                 { nil, %{} }
             end
 
             Repo.update!(order
-              |> Order.payment(%Payment.Details{ order.payment | details: details }))
+              |> Order.update(%{ payment: details }))
 
             %{ order:  order.id,
                action: action }
@@ -412,36 +413,24 @@ defmodule Titticket.V1 do
         get do
           payment = query("paymentId")
           payer   = query("PayerID")
-          order   = Repo.one(Order.for_paypal(payment))
+          order   = Repo.one(Order.paypal(payment))
 
           case Pay.Paypal.execute(payment, payer) do
-            { :ok, response } ->
-              if response["state"] == "approved" do
-                Logger.info "PayPal payment executed for order #{order.id}"
+            { :ok, %{ "state" => "approved" } = response } ->
+              Logger.info "PayPal payment executed for order #{order.id}"
 
-                Repo.update!(order
-                  |> Order.confirm
-                  |> Order.payment(%{ order.payment | details: %{
-                    id:    payment,
-                    payer: response["payer"] } }))
+              Repo.update!(order
+                |> Order.update(%{ confirmed: true, payment: %{
+                  id:    payment,
+                  payer: response["payer"] } }))
 
-                redirect String.replace(
-                  Application.get_env(:titticket, :paypal)[:success],
-                  ":order",
-                  to_string(order.id))
-              else
-                Logger.error "PayPal payment failed for order #{order.id}"
+              redirect String.replace(
+                Application.get_env(:titticket, :paypal)[:success],
+                ":order",
+                to_string(order.id))
 
-                Repo.delete!(order)
-
-                redirect String.replace(
-                  Application.get_env(:titticket, :paypal)[:failure],
-                  ":order",
-                  to_string(order.id))
-              end
-
-            { :error, code, reason } ->
-              Logger.error "PayPal payment failed for order #{order.id} (#{code} #{inspect(reason)})"
+            _ ->
+              Logger.error "PayPal payment failed for order #{order.id}"
 
               Repo.delete!(order)
 
@@ -455,8 +444,8 @@ defmodule Titticket.V1 do
 
       resource :cancel do
         get do
-          payment = query("paymentId")
-          order   = Repo.one(Order.for_paypal(payment))
+          token = query("token")
+          order = Repo.one(Order.paypal(token: token))
 
           Logger.info "PayPal payment cancelled for order #{order.id}"
 
