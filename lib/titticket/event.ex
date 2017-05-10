@@ -21,6 +21,7 @@ defmodule Titticket.Event do
 
     field :title, :string
     field :description, :string
+    field :links, { :array, Event.Link }
     field :status, Status, default: :suspended
 
     field :questions, { :map, Question }
@@ -47,6 +48,7 @@ defmodule Titticket.Event do
 
         title:       event.title,
         description: event.description,
+        links:       event.links,
         status:      event.status,
 
         questions: questions } }
@@ -58,14 +60,14 @@ defmodule Titticket.Event do
 
   def create(params \\ %{}) do
     %__MODULE__{}
-    |> cast(params, [:opens, :closes, :title, :description, :status])
+    |> cast(params, [:opens, :closes, :title, :description, :links, :status])
     |> cast_questions(params["questions"])
     |> validate_required([:opens, :title])
   end
 
   def update(event, params \\ {}) do
     event
-    |> cast(params, [:opens, :closes, :title, :description, :status])
+    |> cast(params, [:opens, :closes, :title, :description, :links, :status])
   end
 
   def available do
