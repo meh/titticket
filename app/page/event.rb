@@ -4,9 +4,7 @@ class Page
 			::Event.fetch(id).then {|event|
 				Promise.when(*event.tickets.map { |id| Ticket.fetch(id) })
 			}.then {
-				Browser::HTTP.get("#{REST::URL}/v1/query/event?q=people&id=#{id}").then {|res|
-					res.json
-				}
+				::Event::People.fetch(id)
 			}
 		end
 
@@ -87,9 +85,9 @@ class Page
 						end
 
 						_.table.striped.preset do
-							@people.each do |name|
-								_.tr do
-									_.td name
+							@people.each do |person|
+								_.tr.data(confirmed: person.confirmed) do
+									_.td person.name
 								end
 							end
 						end
@@ -240,6 +238,10 @@ class Page
 					rule 'table' do
 						width 'calc(100% - 1rem)'
 						margin 0.5.rem
+
+						rule 'tr[data-confirmed="true"]' do
+							font weight: :bold
+						end
 					end
 				end
 
