@@ -92,4 +92,14 @@ defmodule Titticket.Event do
       where:  o.event_id == ^event.id,
       select: o.id
   end
+
+  def people(event) do
+    import Ecto.Query
+
+    from o in Order,
+      distinct: true,
+      where:    o.event_id == ^event.id and not o.private,
+      order_by: o.identifier,
+      select:   [o.identifier, o.confirmed]
+  end
 end

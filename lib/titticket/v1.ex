@@ -11,18 +11,17 @@ defmodule Titticket.V1 do
     allow:    [headers: true, methods: true, credentials: true],
     adapters: [Urna.JSON, Urna.Form]
 
-  import Ecto.Query
   require Logger
-  alias Titticket.{Repo, Changeset, Status, Event, Ticket, Order, Purchase, Payment, Question, Answer, Pay}
+  alias Titticket.{Repo, Changeset, Event, Ticket, Order, Purchase, Payment, Question, Pay}
   import Titticket.Authorization
 
   namespace :v1 do
     resource :query do
       resource :event do
         get do
-          with :authorized <- can?({ :query, :event }) do
-            case query("q") do
-              nil ->
+          case query("q") do
+            nil ->
+              with :authorized <- can?({ :query, :event }) do
                 Enum.map Repo.all(Event.available), fn event ->
                   with { :ok, output } <- Event.output(event,
                                                        can?({ :see, :event, event.id, :tickets }),
@@ -31,27 +30,33 @@ defmodule Titticket.V1 do
                     output
                   end
                 end
+              else
+                :unauthorized ->
+                  fail 401
+              end
 
-              "people" ->
-                with id when is_binary(id) <- query("id"),
-                     { id, _ }             <- Integer.parse(id)
-                do
-                  Repo.all(from o in Order,
-                    distinct: true,
-                    where:    o.event_id == ^id and not o.private,
-                    order_by: o.identifier,
-                    select:   o.identifier)
-                else
-                  _ ->
-                    fail 422
+            "people" ->
+              with id when is_binary(id)   <- query("id"),
+                   { id, _ }               <- Integer.parse(id),
+                   :authorized             <- can?({ :query, :event, id, :people }),
+                   event when event != nil <- Repo.get(Event, id)
+              do
+                Enum.map Repo.all(Event.people(event)), fn [name, confirmed] ->
+                  %{ name: name, confirmed: confirmed }
                 end
+              else
+                :unauthorized ->
+                  fail 401
 
-              _ ->
-                fail 422
-            end
-          else
-            :unauthorized ->
-              fail 401
+                nil ->
+                  fail 404
+
+                _ ->
+                  fail 422
+              end
+
+            _ ->
+              fail 422
           end
         end
       end

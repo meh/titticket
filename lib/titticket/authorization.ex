@@ -28,7 +28,8 @@ defmodule Titticket.Authorization do
   def can?(_, { :see, :ticket, _ }),          do: :authorized
   def can?(_, { :see, :order, _ }),           do: :authorized
 
-  def can?(_, { :query, :event }), do: :authorized
+  def can?(_, { :query, :event }),             do: :authorized
+  def can?(_, { :query, :event, _, :people }), do: :authorized
 
   def can?(_, { :create, :order, _ }), do: :authorized
 
