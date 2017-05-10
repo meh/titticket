@@ -18,6 +18,8 @@ defmodule Titticket.Mixfile do
     [ { :urna,     "~> 0.2" },
       { :httprot,  "~> 0.1" },
       { :ecto,     "~> 2.1" },
-      { :postgrex, "~> 0.13" } ]
+      { :postgrex, "~> 0.13" },
+      { :quantum,  ">= 1.9.1" },
+      { :timex,    "~> 3.0" }]
   end
 end

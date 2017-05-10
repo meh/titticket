@@ -74,4 +74,18 @@ defmodule Titticket.Order do
       where: fragment(~s[? #> '{details,token}' = ?], o.payment, ^token) and
              fragment(~s[? -> 'type' = ?], o.payment, ^:paypal)
   end
+
+  def unconfirmed do
+    import Ecto.Query
+
+    from o in Order,
+      where: not o.confirmed
+  end
+
+  def unconfirmed(:paypal) do
+    import Ecto.Query
+
+    from o in Order,
+      where: fragment(~s[? -> 'type' = ?], o.payment, ^:paypal) and not o.confirmed
+  end
 end

@@ -2,6 +2,11 @@ use Mix.Config
 config :titticket,
   ecto_repos: [Titticket.Repo]
 
+config :quantum, :titticket,
+  cron: [
+    "@hourly": &Titticket.Jobs.paypal/0
+  ]
+
 # Database configuration.
 config :titticket, Titticket.Repo,
   adapter:  Ecto.Adapters.Postgres,
