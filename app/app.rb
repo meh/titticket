@@ -22,6 +22,8 @@ class Titticket < Lissio::Application
 
 			Events.fetch.then {|events|
 				load Page::Index.new(events)
+			}.fail { |e|
+				load Page::Error.new(e)
 			}
 		end
 
@@ -30,18 +32,24 @@ class Titticket < Lissio::Application
 
 			Page::Event.load(params[:id].to_i).trace {|*args|
 				load Page::Event.new(*args)
-			}.fail { |e| $console.log [e, e.backtrace].inspect }
+			}.fail { |e|
+				load Page::Error.new(e)
+			}
 		end
 
 		route '/ticket/:id' do |params|
 			Ticket.fetch(params[:id].to_i).then {|ticket|
 				element.content = ticket.inspect
+			}.fail { |e|
+				load Page::Error.new(e)
 			}
 		end
 
 		route '/order/:id/success' do |params|
 			Order.fetch(params[:id]).then {|order|
 				load Page::Order::Success.new(order)
+			}.fail { |e|
+				load Page::Error.new(e)
 			}
 		end
 
@@ -53,6 +61,11 @@ class Titticket < Lissio::Application
 			load Page::Order::Cancel.new
 		end
 
+		missing do
+			load Page::Error.new
+		end
+
+		# Custom links.
 		route '/italian-embassy-2017' do
 			router.match '/event/1'
 		end
@@ -82,7 +95,6 @@ class Titticket < Lissio::Application
 
 	html do
 		header.sticky
-
 		div.container
 
 #		footer.sticky do

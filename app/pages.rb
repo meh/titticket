@@ -12,6 +12,7 @@ class Page
 	end
 end
 
+require 'page/error'
 require 'page/index'
 require 'page/event'
 require 'page/order'
