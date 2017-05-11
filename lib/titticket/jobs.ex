@@ -4,7 +4,9 @@ defmodule Titticket.Jobs do
 
   def paypal do
     Enum.each Repo.all(Order.unconfirmed(:paypal)), fn order ->
-      response = Pay.Paypal.status!(order.payment.details["id"])
+      payment  = order.payment.details["id"]
+      response = Pay.Paypal.status!(payment)
+      payer    = response["payer"]["payer_info"]["payer_id"]
 
       case response["state"] do
         # The payment is being approved, removed the order if it expired.
@@ -19,10 +21,30 @@ defmodule Titticket.Jobs do
 
         # The payment was approved but the redirect failed.
         "approved" ->
-          Logger.info "PayPal payment executed for order #{order.id}"
+          case Pay.Paypal.execute(payment, payer) do
+            # Execution successful.
+            { :ok, %{ "state" => "approved" } = response } ->
+              Logger.info "PayPal payment executed for order #{order.id}"
 
-          Repo.update!(order
-            |> Order.update(%{ confirmed: true }))
+              Repo.update!(order
+                |> Order.update(%{ confirmed: true, payment: %{
+                  id:    payment,
+                  payer: response["payer"] } }))
+
+            # Execution failed.
+            { :ok, %{ "state" => "failed" } = response } ->
+              Logger.error "PayPal payment failed for order #{order.id} because #{response["failure_reason"]}"
+
+              Repo.delete!(order)
+
+            # Network error.
+            { :error, reason } ->
+              Logger.error "PayPal network error for order #{order.id} (#{inspect(reason)})"
+
+            # PayPal error.
+            { :error, code, reason } ->
+              Logger.error "PayPal payment error for order #{order.id} (#{code} #{inspect(reason)})"
+          end
 
         # The payment failed, remove the order.
         "failed" ->

@@ -24,7 +24,7 @@ defmodule Titticket.Pay.Paypal do
 
   def token do
     if expired? do
-      response = HTTP.post!("#{url}/oauth2/token", "grant_type=client_credentials",
+      response = HTTP.post("#{url}/oauth2/token", "grant_type=client_credentials",
         "Accept":        "application/json",
         "Content-Type":  "application/x-www-form-urlencoded",
         "Authorization": "Basic #{auth}") |> parse
@@ -47,7 +47,7 @@ defmodule Titticket.Pay.Paypal do
 
   def expired? do
     case Agent.get(Paypal, &(&1.token)) do
-      %{expires: expires} ->
+      %{ expires: expires } ->
         DateTime.to_unix(DateTime.utc_now) > expires
 
       _ ->
@@ -80,7 +80,7 @@ defmodule Titticket.Pay.Paypal do
     currency = Application.get_env(:titticket, :paypal)[:currency]
     total    = Order.total(order, :paypal)
 
-    result = HTTP.post!("#{url}/payments/payment", Poison.encode!(%{
+    result = HTTP.post("#{url}/payments/payment", Poison.encode!(%{
       intent: :sale,
       payer:  %{payment_method: :paypal},
 
@@ -115,7 +115,7 @@ defmodule Titticket.Pay.Paypal do
   Get the status of a payment.
   """
   def status(id) do
-    HTTP.get!("#{url}/payments/payment/#{id}", headers) |> parse
+    HTTP.get("#{url}/payments/payment/#{id}", headers) |> parse
   end
 
   def status!(id) do
@@ -126,7 +126,7 @@ defmodule Titticket.Pay.Paypal do
   Finalize a payment.
   """
   def execute(id, payer) do
-    HTTP.post!("#{url}/payments/payment/#{id}/execute", Poison.encode!(%{
+    HTTP.post("#{url}/payments/payment/#{id}/execute", Poison.encode!(%{
       payer_id: payer }), headers) |> parse
   end
 
@@ -137,7 +137,7 @@ defmodule Titticket.Pay.Paypal do
   @doc """
   Parse a response into something usable.
   """
-  defp parse(response) do
+  defp parse({ :ok, response }) do
     body = Poison.decode!(HTTP.Response.body!(response))
 
     if response.status |> HTTP.Status.success? do
@@ -145,6 +145,10 @@ defmodule Titticket.Pay.Paypal do
     else
       { :error, response.status.code, body }
     end
+  end
+
+  defp parse({ :error, reason }) do
+    { :error, reason }
   end
 
   @doc """

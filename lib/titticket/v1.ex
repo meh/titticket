@@ -413,9 +413,10 @@ defmodule Titticket.V1 do
         get do
           payment = query("paymentId")
           payer   = query("PayerID")
-          order   = Repo.one(Order.paypal(payment))
+          order   = Repo.one!(Order.paypal(payment))
 
           case Pay.Paypal.execute(payment, payer) do
+            # Execution successful.
             { :ok, %{ "state" => "approved" } = response } ->
               Logger.info "PayPal payment executed for order #{order.id}"
 
@@ -429,13 +430,32 @@ defmodule Titticket.V1 do
                 ":order",
                 to_string(order.id))
 
-            _ ->
-              Logger.error "PayPal payment failed for order #{order.id}"
+            # Execution failed.
+            { :ok, %{ "state" => "failed" } = response } ->
+              Logger.error "PayPal payment failed for order #{order.id} because #{response["failure_reason"]}"
 
               Repo.delete!(order)
 
               redirect String.replace(
                 Application.get_env(:titticket, :paypal)[:failure],
+                ":order",
+                to_string(order.id))
+
+            # Network error.
+            { :error, reason } ->
+              Logger.error "PayPal network error for order #{order.id} (#{inspect(reason)})"
+
+              redirect String.replace(
+                Application.get_env(:titticket, :paypal)[:success],
+                ":order",
+                to_string(order.id))
+
+            # PayPal error.
+            { :error, code, reason } ->
+              Logger.error "PayPal payment error for order #{order.id} (#{code} #{inspect(reason)})"
+
+              redirect String.replace(
+                Application.get_env(:titticket, :paypal)[:success],
                 ":order",
                 to_string(order.id))
           end
@@ -445,7 +465,7 @@ defmodule Titticket.V1 do
       resource :cancel do
         get do
           token = query("token")
-          order = Repo.one(Order.paypal(token: token))
+          order = Repo.one!(Order.paypal(token: token))
 
           Logger.info "PayPal payment cancelled for order #{order.id}"
 
