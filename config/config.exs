@@ -2,10 +2,22 @@ use Mix.Config
 config :titticket,
   ecto_repos: [Titticket.Repo]
 
+# Internal jobs.
 config :quantum, :titticket,
   cron: [
     "@hourly": &Titticket.Jobs.paypal/0
   ]
+
+# Mailer configuration.
+config :titticket, Titticket.Mailer,
+  adapter: Bamboo.SMTPAdapter,
+  server: "smtp.domain",
+  port: 1025,
+  username: "your.name@your.domain",
+  password: "pa55word",
+  tls: :if_available, # can be `:always` or `:never`
+  ssl: false, # can be `true`
+  retries: 1
 
 # Database configuration.
 config :titticket, Titticket.Repo,

@@ -15,11 +15,21 @@ defmodule Titticket.Mixfile do
   end
 
   defp deps do
-    [ { :urna,     "~> 0.2" },
-      { :httprot,  "~> 0.1" },
+    [ # REST stuff.
+      { :urna,    "~> 0.2" },
+      { :httprot, "~> 0.1" },
+
+      # Database stuff.
       { :ecto,     "~> 2.1" },
       { :postgrex, "~> 0.13" },
-      { :quantum,  ">= 1.9.1" },
-      { :timex,    "~> 3.0" }]
+
+      # Queues and jobs and such.
+      { :quantum, ">= 1.9.1" },
+      { :timex,   "~> 3.0" },
+
+      # Email stuff.
+      { :bamboo,      "~> 0.8" },
+      { :bamboo_smtp, "~> 1.3" },
+    ]
   end
 end
