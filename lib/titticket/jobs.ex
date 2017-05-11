@@ -15,7 +15,8 @@ defmodule Titticket.Jobs do
           now     = DateTime.to_unix(DateTime.utc_now)
 
           if now - updated > 60 * 60 do
-            Logger.error "PayPal payment failed for order #{order.id}"
+            Logger.error "PayPal payment timed out for order #{order.id}"
+
             Repo.delete!(order)
           end
 
