@@ -1,7 +1,7 @@
 %{"bamboo": {:hex, :bamboo, "0.8.0", "573889a3efcb906bb9d25a1c4caa4ca22f479235e1b8cc3260d8b88dabeb4b14", [:mix], [{:hackney, "~> 1.6", [hex: :hackney, optional: false]}, {:plug, "~> 1.0", [hex: :plug, optional: false]}, {:poison, ">= 1.5.0", [hex: :poison, optional: false]}]},
   "bamboo_smtp": {:hex, :bamboo_smtp, "1.3.0", "1e3f162a352b44cc528827a1a3ab2feb0a34592cd76b49b2570abd33accbece3", [:mix], [{:bamboo, "~> 0.8.0", [hex: :bamboo, optional: false]}, {:gen_smtp, "~> 0.11.0", [hex: :gen_smtp, optional: false]}]},
   "calendar": {:hex, :calendar, "0.17.2", "d6b7bccc29c72203b076d4e488d967780bf2d123a96fafdbf45746fdc2fa342c", [:mix], [{:tzdata, "~> 0.5.8 or ~> 0.1.201603", [hex: :tzdata, optional: false]}]},
-  "cauldron": {:hex, :cauldron, "0.1.7", "b5e41b4f60df1930a803d4e47ce8af281c5be2e99fad543a70b9fcb2b9e70629", [:mix], [{:datastructures, "~> 0.2", [hex: :datastructures, optional: false]}, {:httprot, "~> 0.1", [hex: :httprot, optional: false]}, {:reagent, "~> 0.1", [hex: :reagent, optional: false]}]},
+  "cauldron": {:hex, :cauldron, "0.1.8", "52bad518c3a3f04508e3616643d6a7a7f0a7d8da443053479f18c9122a3a70a3", [:mix], [{:datastructures, "~> 0.2", [hex: :datastructures, optional: false]}, {:httprot, "~> 0.1", [hex: :httprot, optional: false]}, {:reagent, "~> 0.1", [hex: :reagent, optional: false]}]},
   "certifi": {:hex, :certifi, "1.1.0", "c9b71a547016c2528a590ccfc28de786c7edb74aafa17446b84f54e04efc00ee", [:rebar3], []},
   "combine": {:hex, :combine, "0.9.6", "8d1034a127d4cbf6924c8a5010d3534d958085575fa4d9b878f200d79ac78335", [:mix], []},
   "connection": {:hex, :connection, "1.0.4", "a1cae72211f0eef17705aaededacac3eb30e6625b04a6117c1b2db6ace7d5976", [:mix], []},
