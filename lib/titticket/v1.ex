@@ -432,7 +432,7 @@ defmodule Titticket.V1 do
                   payer: response["payer"] } }))
 
               redirect String.replace(
-                Application.get_env(:titticket, :paypal)[:success],
+                Application.get_env(:titticket, Pay.Paypal)[:success],
                 ":order",
                 to_string(order.id))
 
@@ -443,7 +443,7 @@ defmodule Titticket.V1 do
               Repo.delete!(order)
 
               redirect String.replace(
-                Application.get_env(:titticket, :paypal)[:failure],
+                Application.get_env(:titticket, Pay.Paypal)[:failure],
                 ":order",
                 to_string(order.id))
 
@@ -452,7 +452,7 @@ defmodule Titticket.V1 do
               Logger.error "PayPal network error for order #{order.id} (#{inspect(reason)})"
 
               redirect String.replace(
-                Application.get_env(:titticket, :paypal)[:success],
+                Application.get_env(:titticket, Pay.Paypal)[:success],
                 ":order",
                 to_string(order.id))
 
@@ -461,7 +461,7 @@ defmodule Titticket.V1 do
               Logger.error "PayPal payment error for order #{order.id} (#{code} #{inspect(reason)})"
 
               redirect String.replace(
-                Application.get_env(:titticket, :paypal)[:success],
+                Application.get_env(:titticket, Pay.Paypal)[:success],
                 ":order",
                 to_string(order.id))
           end
@@ -478,7 +478,7 @@ defmodule Titticket.V1 do
           Repo.delete!(order)
 
           redirect String.replace(
-            Application.get_env(:titticket, :paypal)[:cancel],
+            Application.get_env(:titticket, Pay.Paypal)[:cancel],
             ":order",
             to_string(order.id))
         end
