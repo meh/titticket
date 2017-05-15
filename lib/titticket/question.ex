@@ -43,15 +43,15 @@ defmodule Titticket.Question do
 
   def cast(_), do: :error
 
-  def load(%{ "id" => id, "type" => type, "required" => required, "private" => private, "title" => title, "price" => price, "amount" => amount, "children" => children }) do
+  def load(%{ "id" => id, "type" => type, "title" => title } = this) do
     with { :ok, id }       <- Ecto.UUID.cast(id),
          { :ok, type }     <- Question.Type.load(type),
-         { :ok, required } <- Ecto.Type.load(:boolean, required),
-         { :ok, private }  <- Ecto.Type.load(:boolean, private),
+         { :ok, required } <- Ecto.Type.load(:boolean, this["required"] || false),
+         { :ok, private }  <- Ecto.Type.load(:boolean, this["private"] || false),
          { :ok, title }    <- Ecto.Type.load(:string, title),
-         { :ok, price }    <- Ecto.Type.cast(:decimal, price),
-         { :ok, amount }   <- Ecto.Type.load(:integer, amount),
-         { :ok, children } <- Ecto.Type.cast({ :array, Ecto.UUID }, children)
+         { :ok, price }    <- Ecto.Type.cast(:decimal, this["price"]),
+         { :ok, amount }   <- Ecto.Type.load(:integer, this["amount"]),
+         { :ok, children } <- Ecto.Type.cast({ :array, Ecto.UUID }, this["children"] || [])
     do
       { :ok, %Question{ id: id, type: type, required: required, private: private, title: title, price: price, amount: amount, children: children } }
     else

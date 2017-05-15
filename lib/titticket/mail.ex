@@ -36,9 +36,9 @@ defmodule Titticket.Mail do
 
   def cast(_), do: :error
 
-  def load(%{ "sender" => sender, "notify" => notify, "subject" => subject, "html" => html, "plain" => plain }) do
+  def load(%{ "sender" => sender, "subject" => subject, "html" => html, "plain" => plain } = this) do
     with { :ok, sender }  <- Ecto.Type.load(:string, sender),
-         { :ok, notify }  <- Ecto.Type.load({ :array, :string }, notify),
+         { :ok, notify }  <- Ecto.Type.load({ :array, :string }, this["notify"] || []),
          { :ok, subject } <- Ecto.Type.load(:string, subject),
          { :ok, html }    <- Ecto.Type.load(:string, html),
          { :ok, plain }   <- Ecto.Type.load(:string, plain)
