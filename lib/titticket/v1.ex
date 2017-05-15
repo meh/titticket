@@ -227,27 +227,33 @@ defmodule Titticket.V1 do
       # Get an order.
       get id do
         with :authorized             <- can?({ :see, :order, id }),
-             order when order != nil <- Repo.get(Order, id) |> Repo.preload(purchases: [:ticket, :order])
+             order when order != nil <- Repo.get(Order, id) |> Repo.preload([:event, purchases: [:ticket, :order]])
         do
           %{ id:    order.id,
              event: order.event_id,
 
              total:      Order.total(order),
-             identifier: if(not order.private or :authorized == can?({ :see, :order, order.id, :identifier }), do: order.identifier),
+             identifier: if(:authorized == can?({ :see, :order, order.id, :identifier }), do: order.identifier),
              email:      if(:authorized == can?({ :see, :order, order.id, :email }), do: order.email),
-             private:    order.private,
              confirmed:  order.confirmed,
-
-             answers: if(:authorized == can?({ :see, :order, order.id, :answers }),
-                        do:   order.answers,
-                        else: %{}),
+             answers:    Enum.map(order.answers, fn answer ->
+               if !order.event.questions[answer.id].private ||
+                  :authorized == can?({ :see, :order, order.id, :answers })
+               do
+                 answer
+               end
+             end) |> Enum.reject(&(&1 == nil)),
 
              purchases: Enum.map(order.purchases, fn purchase ->
-               %{ ticket:     purchase.ticket_id,
-                  total:      Purchase.total(purchase),
-                  answers:    if(:authorized == can?({ :see, :purchase, purchase.id, :answers }),
-                                 do:   purchase.answers,
-                                 else: %{}) }
+               %{ ticket:  purchase.ticket_id,
+                  total:   Purchase.total(purchase),
+                  answers: Enum.map(purchase.answers, fn answer ->
+                    if !purchase.ticket.questions[answer.id].private ||
+                       :authorized == can?({ :see, :purchase, purchase.id, :answers })
+                    do
+                      answer
+                    end
+                  end) |> Enum.reject(&(&1 == nil)) }
              end) }
         else
           :unauthorized ->

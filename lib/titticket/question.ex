@@ -18,6 +18,7 @@ defmodule Titticket.Question do
     id:       Ecto.UUID,
     type:     Question.Type,
     required: :boolean,
+    private:  :boolean,
     title:    :string,
     price:    :decimal,
     amount:   :integer,
@@ -27,6 +28,7 @@ defmodule Titticket.Question do
   defstruct id:       nil,
             type:     nil,
             required: false,
+            private:  false,
             title:    nil,
             price:    nil,
             amount:   nil,
@@ -41,16 +43,17 @@ defmodule Titticket.Question do
 
   def cast(_), do: :error
 
-  def load(%{ "id" => id, "type" => type, "required" => required, "title" => title, "price" => price, "amount" => amount, "children" => children }) do
+  def load(%{ "id" => id, "type" => type, "required" => required, "private" => private, "title" => title, "price" => price, "amount" => amount, "children" => children }) do
     with { :ok, id }       <- Ecto.UUID.cast(id),
          { :ok, type }     <- Question.Type.load(type),
          { :ok, required } <- Ecto.Type.load(:boolean, required),
+         { :ok, private }  <- Ecto.Type.load(:boolean, private),
          { :ok, title }    <- Ecto.Type.load(:string, title),
          { :ok, price }    <- Ecto.Type.cast(:decimal, price),
          { :ok, amount }   <- Ecto.Type.load(:integer, amount),
          { :ok, children } <- Ecto.Type.cast({ :array, Ecto.UUID }, children)
     do
-      { :ok, %Question{ id: id, type: type,  required: required, title: title, price: price, amount: amount, children: children } }
+      { :ok, %Question{ id: id, type: type, required: required, private: private, title: title, price: price, amount: amount, children: children } }
     else
       :error ->
         :error
@@ -59,16 +62,17 @@ defmodule Titticket.Question do
 
   def load(_), do: :error
 
-  def dump(%Question{ id: id, type: type, required: required, title: title, price: price, amount: amount, children: children }) do
+  def dump(%Question{ id: id, type: type, required: required, private: private, title: title, price: price, amount: amount, children: children }) do
     with { :ok, id }       <- Ecto.Type.dump(:string, id),
          { :ok, type }     <- Question.Type.dump(type),
          { :ok, required } <- Ecto.Type.dump(:boolean, required),
+         { :ok, private }  <- Ecto.Type.dump(:boolean, private),
          { :ok, title }    <- Ecto.Type.dump(:string, title),
          { :ok, price }    <- Ecto.Type.dump(:decimal, price),
          { :ok, amount }   <- Ecto.Type.dump(:integer, amount),
          { :ok, children } <- Ecto.Type.dump({ :array, :string }, children)
     do
-      { :ok, %{ "id" => id, "type" => type, "required" => required, "title" => title, "price" => price, "amount" => amount, "children" => children } }
+      { :ok, %{ "id" => id, "type" => type, "required" => required, "private" => private, "title" => title, "price" => price, "amount" => amount, "children" => children } }
     else
       :error ->
         :error
