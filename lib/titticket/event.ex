@@ -11,7 +11,7 @@ defmodule Titticket.Event do
   use Titticket.Changeset
 
   alias __MODULE__
-  alias Titticket.{Repo, Status, Ticket, Order, Authorization, Question}
+  alias Titticket.{Repo, Status, Ticket, Order, Authorization, Question, Mail}
 
   schema "events" do
     timestamps()
@@ -22,6 +22,7 @@ defmodule Titticket.Event do
     field :title, :string
     field :description, :string
     field :links, { :array, Event.Link }
+    field :mail, Mail
     field :status, Status, default: :suspended
 
     field :questions, { :map, Question }
@@ -60,14 +61,14 @@ defmodule Titticket.Event do
 
   def create(params \\ %{}) do
     %__MODULE__{}
-    |> cast(params, [:opens, :closes, :title, :description, :links, :status])
+    |> cast(params, [:opens, :closes, :title, :description, :links, :mail, :status])
     |> cast_questions(params["questions"])
     |> validate_required([:opens, :title])
   end
 
   def update(event, params \\ {}) do
     event
-    |> cast(params, [:opens, :closes, :title, :description, :links, :status])
+    |> cast(params, [:opens, :closes, :title, :description, :links, :mail, :status])
   end
 
   def available do
