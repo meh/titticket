@@ -3,7 +3,7 @@ defmodule Titticket.Pay.Paypal do
   import Logger
   alias __MODULE__
 
-  alias Titticket.{Order, Purchase}
+  alias Titticket.{V1, Order, Purchase}
 
   @real "https://api.paypal.com/v1"
   @sandbox "https://api.sandbox.paypal.com/v1"
@@ -57,11 +57,11 @@ defmodule Titticket.Pay.Paypal do
 
   defp auth do
     { user, pass } = if Mix.env == :prod do
-      { Application.get_env(:titticket, :paypal)[:id],
-        Application.get_env(:titticket, :paypal)[:secret] }
+      { Application.get_env(:titticket, Paypal)[:id],
+        Application.get_env(:titticket, Paypal)[:secret] }
     else
-      { Application.get_env(:titticket, :paypal)[:sandbox][:id],
-        Application.get_env(:titticket, :paypal)[:sandbox][:secret] }
+      { Application.get_env(:titticket, Paypal)[:sandbox][:id],
+        Application.get_env(:titticket, Paypal)[:sandbox][:secret] }
     end
 
     :base64.encode("#{user}:#{pass}")
@@ -77,7 +77,7 @@ defmodule Titticket.Pay.Paypal do
   Request a new payment.
   """
   def create(order) do
-    currency = Application.get_env(:titticket, :paypal)[:currency]
+    currency = Application.get_env(:titticket, Paypal)[:currency]
     total    = Order.total(order, :paypal)
 
     result = HTTP.post("#{url}/payments/payment", Poison.encode!(%{
@@ -102,8 +102,8 @@ defmodule Titticket.Pay.Paypal do
           total:    total } }],
 
       redirect_urls: %{
-        return_url: "#{Application.get_env(:titticket, :base)}/v1/paypal/done",
-        cancel_url: "#{Application.get_env(:titticket, :base)}/v1/paypal/cancel" }
+        return_url: "#{Application.get_env(:titticket, V1)[:base]}/v1/paypal/done",
+        cancel_url: "#{Application.get_env(:titticket, V1)[:base]}/v1/paypal/cancel" }
     }), headers) |> parse
   end
 

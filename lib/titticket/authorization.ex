@@ -7,11 +7,13 @@
 #  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 defmodule Titticket.Authorization do
+  alias __MODULE__
+
   @type t :: :authorized | :unathorized
 
   defmacro can?(what) do
     quote do
-      if header("X-Access-Token") == Application.get_env(:titticket, :secret) do
+      if header("X-Access-Token") == Application.get_env(:titticket, Authorization)[:secret] do
         unquote(__MODULE__).can?(:god, unquote(what))
       else
         unquote(__MODULE__).can?(nil, unquote(what))

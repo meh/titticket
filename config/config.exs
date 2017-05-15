@@ -1,49 +1,51 @@
 use Mix.Config
-config :titticket,
-  ecto_repos: [Titticket.Repo]
+alias Titticket.{Repo, V1, Mailer, Jobs, Authorization, Pay}
 
-# Internal jobs.
-config :quantum, :titticket,
-  cron: [
-    "@hourly": &Titticket.Jobs.paypal/0
-  ]
+# Address and port to listen on.
+config :titticket, V1,
+  host: "127.0.0.1",
+  port: 3000,
+  base: "https://example.com"
 
-# Mailer configuration.
-config :titticket, Titticket.Mailer,
-  adapter: Bamboo.SMTPAdapter,
-  server: "smtp.domain",
-  port: 1025,
-  username: "your.name@your.domain",
-  password: "pa55word",
-  tls: :if_available, # can be `:always` or `:never`
-  ssl: false, # can be `true`
-  retries: 1
+# Shared secret for authentication.
+config :titticket, Authorization,
+  secret: "fill-me"
 
 # Database configuration.
-config :titticket, Titticket.Repo,
+config :titticket,
+  ecto_repos: [Repo]
+
+config :titticket, Repo,
   adapter:  Ecto.Adapters.Postgres,
   database: "titticket",
   username: "postgres",
   password: "postgres",
   hostname: "localhost"
 
-# Address and port to listen on.
-config :titticket,
-  host: "127.0.0.1",
-  port: 8080,
-  base: "https://example.com"
+# Internal jobs.
+config :quantum, :titticket,
+  cron: [
+    "@hourly": &Jobs.paypal/0
+  ]
 
-# Shared secret for authentication.
-config :titticket,
-  secret: "fill-me"
+# Mailer configuration.
+config :titticket, Mailer,
+  adapter: Bamboo.SMTPAdapter,
+  server: "mail.example.com",
+  port: 25,
+  username: "user",
+  password: "password",
+  tls: :if_available,
+  ssl: false,
+  retries: 3
 
 # Configure PayPal.
-config :titticket, :paypal,
+config :titticket, Pay.Paypal,
   currency: :EUR,
 
-  success: "https://example.com/order/:order/executed",
-  failure: "https://example.com/order/:order/cancelled",
-  cancel:  "https://example.com/order/:order/cancel",
+  success: "https://example.com/order/:order/success",
+  failure: "https://example.com/order/failure",
+  cancel:  "https://example.com/order/cancel",
 
   id:     "fill-me",
   secret: "fill-me",

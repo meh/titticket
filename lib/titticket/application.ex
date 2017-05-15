@@ -10,16 +10,17 @@ defmodule Titticket.Application do
   @moduledoc false
 
   use Application
+  alias Titticket.{V1, Pay, Repo}
 
   def start(_type, _args) do
     import Supervisor.Spec, warn: false
 
     children = [
-      worker(Titticket.Pay.Paypal, []),
-      supervisor(Titticket.Repo, []),
-      supervisor(Urna, [Titticket.V1, [
-        host: Application.get_env(:titticket, :host),
-        port: Application.get_env(:titticket, :port) ]]),
+      worker(Pay.Paypal, []),
+      supervisor(Repo, []),
+      supervisor(Urna, [V1, [
+        host: Application.get_env(:titticket, V1)[:host],
+        port: Application.get_env(:titticket, V1)[:port] ]]),
     ]
 
     opts = [strategy: :one_for_one, name: Titticket.Supervisor]
