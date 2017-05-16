@@ -101,6 +101,6 @@ defmodule Titticket.Event do
       distinct: true,
       where:    o.event_id == ^event.id and not o.private,
       order_by: o.identifier,
-      select:   [o.identifier, o.confirmed]
+      select:   [o.identifier, o.status]
   end
 end

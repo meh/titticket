@@ -41,8 +41,8 @@ defmodule Titticket.V1 do
                    :authorized             <- can?({ :query, :event, id, :people }),
                    event when event != nil <- Repo.get(Event, id)
               do
-                Enum.map Repo.all(Event.people(event)), fn [name, confirmed] ->
-                  %{ name: name, confirmed: confirmed }
+                Enum.map Repo.all(Event.people(event)), fn [name, status] ->
+                  %{ name: name, status: status }
                 end
               else
                 :unauthorized ->
@@ -235,9 +235,9 @@ defmodule Titticket.V1 do
              total:      Order.total(order),
              identifier: if(:authorized == can?({ :see, :order, order.id, :identifier }), do: order.identifier),
              email:      if(:authorized == can?({ :see, :order, order.id, :email }), do: order.email),
-             confirmed:  order.confirmed,
-             answers:    Enum.map(order.answers, fn answer ->
-               if !order.event.questions[answer.id].private ||
+             status:     order.status,
+             answers:    Enum.map(order.answers, fn { id, answer } ->
+               if !order.event.questions[id].private ||
                   :authorized == can?({ :see, :order, order.id, :answers })
                do
                  answer
@@ -247,8 +247,8 @@ defmodule Titticket.V1 do
              purchases: Enum.map(order.purchases, fn purchase ->
                %{ ticket:  purchase.ticket_id,
                   total:   Purchase.total(purchase),
-                  answers: Enum.map(purchase.answers, fn answer ->
-                    if !purchase.ticket.questions[answer.id].private ||
+                  answers: Enum.map(purchase.answers, fn { id, answer } ->
+                    if !purchase.ticket.questions[id].private ||
                        :authorized == can?({ :see, :purchase, purchase.id, :answers })
                     do
                       answer
@@ -328,7 +328,7 @@ defmodule Titticket.V1 do
           do
             { action, details } = case order.payment.type do
               :paypal ->
-                response = Pay.Paypal.create!(order |> Repo.preload([:event, purchases: :ticket]))
+                response = Pay.Paypal.Payment.create!(order |> Repo.preload([:event, purchases: :ticket]))
                 approval = Enum.find(response["links"], &(&1["rel"] == "approval_url"))["href"]
 
                 { %{ redirect: approval },
@@ -415,21 +415,55 @@ defmodule Titticket.V1 do
 
     # PayPal integration stuff.
     namespace :paypal do
+      resource :hook do
+        # TODO: verify signature
+        post do
+          case param("event_type") do
+            "PAYMENT.SALE." <> event ->
+              id    = param("resource")["parent_payment"]
+              order = Repo.one!(Order.paypal(id))
+
+              case event do
+                "COMPLETED" ->
+                  Logger.info "PayPal payment completed for order #{order.id}"
+                  Repo.update!(order |> Order.update(%{ status: :paid }))
+
+                "DENIED" ->
+                  Logger.info "PayPal payment denied for order #{order.id}"
+                  Repo.delete!(order)
+
+                "PENDING" ->
+                  Logger.info "PayPal payment pending for order #{order.id}"
+                  Repo.update!(order |> Order.update(%{ status: :pending }))
+
+                "REFUNDED" ->
+                  Logger.info "PayPal payment refunded for order #{order.id}"
+                  Repo.update!(order |> Order.update(%{ status: :refunded }))
+
+                "REVERSED" ->
+                  Logger.info "PayPal payment reversed for order #{order.id}"
+                  Repo.update!(order |> Order.update(%{ status: :refunded }))
+              end
+
+            event ->
+              Logger.warn "PayPal unhandled event #{event}"
+          end
+
+          reply 204
+        end
+      end
+
       resource :done do
         get do
           payment = query("paymentId")
           payer   = query("PayerID")
           order   = Repo.one!(Order.paypal(payment))
 
-          case Pay.Paypal.execute(payment, payer) do
+          case Pay.Paypal.Payment.execute(payment, payer) do
             # Execution successful.
             { :ok, %{ "state" => "approved" } = response } ->
               Logger.info "PayPal payment executed for order #{order.id}"
-
-              Repo.update!(order
-                |> Order.update(%{ confirmed: true, payment: %{
-                  id:    payment,
-                  payer: response["payer"] } }))
+              Repo.update!(order |> Order.payment(:paypal, response))
 
               redirect String.replace(
                 Application.get_env(:titticket, Pay.Paypal)[:success],
@@ -439,7 +473,6 @@ defmodule Titticket.V1 do
             # Execution failed.
             { :ok, %{ "state" => "failed" } = response } ->
               Logger.error "PayPal payment failed for order #{order.id} because #{response["failure_reason"]}"
-
               Repo.delete!(order)
 
               redirect String.replace(

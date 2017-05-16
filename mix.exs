@@ -17,7 +17,7 @@ defmodule Titticket.Mixfile do
   defp deps do
     [ # REST stuff.
       { :urna,    "~> 0.2" },
-      { :httprot, "~> 0.1" },
+      { :httprot, "~> 0.2" },
 
       # Database stuff.
       { :ecto,     "~> 2.1" },

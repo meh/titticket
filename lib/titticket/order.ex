@@ -20,7 +20,7 @@ defmodule Titticket.Order do
     field :identifier, :string
     field :email, :string
     field :private, :boolean, default: false
-    field :confirmed, :boolean, default: false
+    field :status, Order.Status, default: :created
 
     field :payment, Payment.Details
     field :answers, { :map, Answer }
@@ -31,7 +31,7 @@ defmodule Titticket.Order do
 
   def create(event, params \\ %{}) do
     %__MODULE__{}
-    |> cast(params, [:identifier, :email, :private, :confirmed, :payment])
+    |> cast(params, [:identifier, :email, :private, :status, :payment])
     |> validate_required([:identifier, :email])
     |> cast_answers(params["answers"])
     |> validate_answers(:answers, event.questions)
@@ -39,7 +39,7 @@ defmodule Titticket.Order do
   end
 
   def update(order, params \\ %{}) do
-    updated = order |> cast(params, [:identifier, :email, :private, :confirmed])
+    updated = order |> cast(params, [:identifier, :email, :private, :status])
 
     updated = if is_map(params["payment"] || params[:payment]) do
       updated |> put_change(:payment, %Payment.Details{ order.payment |
@@ -49,6 +49,20 @@ defmodule Titticket.Order do
     end
 
     updated
+  end
+
+  def payment(order, :paypal, response) do
+    id          = response["id"]
+    transaction = Enum.at(response["transactions"], 0)
+    resources   = transaction["related_resources"]
+    sale        = Enum.find(resources, &(&1["sale"]))["sale"]["id"]
+    payer       = response["payer"]["payer_info"]["payer_id"]
+
+    order |> update(%{
+      payment:   %{
+        id:    id,
+        sale:  sale,
+        payer: payer } })
   end
 
   def total(order) do
@@ -68,7 +82,7 @@ defmodule Titticket.Order do
              fragment(~s[? -> 'type' = ?], o.payment, ^:paypal)
   end
 
-  def paypal(token: token) when is_binary(token) do
+  def paypal(token: token) do
     import Ecto.Query
 
     from o in Order,
@@ -76,17 +90,33 @@ defmodule Titticket.Order do
              fragment(~s[? -> 'type' = ?], o.payment, ^:paypal)
   end
 
-  def unconfirmed do
+  def paypal(sale: sale) do
     import Ecto.Query
 
     from o in Order,
-      where: not o.confirmed
+      where: fragment(~s[? #> '{details,sale}' = ?], o.payment, ^sale) and
+             fragment(~s[? -> 'type' = ?], o.payment, ^:paypal)
   end
 
-  def unconfirmed(:paypal) do
+  def paypal(payer: payer) do
     import Ecto.Query
 
     from o in Order,
-      where: fragment(~s[? -> 'type' = ?], o.payment, ^:paypal) and not o.confirmed
+      where: fragment(~s[? #> '{details,payer}' = ?], o.payment, ^payer) and
+             fragment(~s[? -> 'type' = ?], o.payment, ^:paypal)
+  end
+
+  def pending do
+    import Ecto.Query
+
+    from o in Order,
+      where: not o.status == ^:pending
+  end
+
+  def pending(:paypal) do
+    import Ecto.Query
+
+    from o in Order,
+      where: fragment(~s[? -> 'type' = ?], o.payment, ^:paypal) and o.status in ^[:created, :pending]
   end
 end
