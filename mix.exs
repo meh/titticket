@@ -30,6 +30,8 @@ defmodule Titticket.Mixfile do
       # Email stuff.
       { :bamboo,      "~> 0.8" },
       { :bamboo_smtp, "~> 1.3" },
+
+      { :logger_file_backend, "~> 0.0" }
     ]
   end
 end
