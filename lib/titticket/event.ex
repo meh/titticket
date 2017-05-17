@@ -98,9 +98,9 @@ defmodule Titticket.Event do
     import Ecto.Query
 
     from o in Order,
-      distinct: true,
+      distinct: o.identifier,
       where:    o.event_id == ^event.id and not o.private,
-      order_by: o.identifier,
+      order_by: [asc: o.identifier, desc: o.status],
       select:   [o.identifier, o.status]
   end
 end
