@@ -425,23 +425,23 @@ defmodule Titticket.V1 do
 
               case event do
                 "COMPLETED" ->
-                  Logger.info "PayPal payment completed for order #{order.id}"
+                  Logger.info "PayPal payment completed for order #{order.id}", pay: :paypal
                   Repo.update!(order |> Order.update(%{ status: :paid }))
 
                 "DENIED" ->
-                  Logger.info "PayPal payment denied for order #{order.id}"
+                  Logger.info "PayPal payment denied for order #{order.id}", pay: :paypal
                   Repo.delete!(order)
 
                 "PENDING" ->
-                  Logger.info "PayPal payment pending for order #{order.id}"
+                  Logger.info "PayPal payment pending for order #{order.id}", pay: :paypal
                   Repo.update!(order |> Order.update(%{ status: :pending }))
 
                 "REFUNDED" ->
-                  Logger.info "PayPal payment refunded for order #{order.id}"
+                  Logger.info "PayPal payment refunded for order #{order.id}", pay: :paypal
                   Repo.update!(order |> Order.update(%{ status: :refunded }))
 
                 "REVERSED" ->
-                  Logger.info "PayPal payment reversed for order #{order.id}"
+                  Logger.info "PayPal payment reversed for order #{order.id}", pay: :paypal
                   Repo.update!(order |> Order.update(%{ status: :refunded }))
               end
 
@@ -462,7 +462,7 @@ defmodule Titticket.V1 do
           case Pay.Paypal.Payment.execute(payment, payer) do
             # Execution successful.
             { :ok, %{ "state" => "approved" } = response } ->
-              Logger.info "PayPal payment executed for order #{order.id}"
+              Logger.info "PayPal payment executed for order #{order.id}", pay: :paypal
               Repo.update!(order |> Order.payment(:paypal, response))
 
               redirect String.replace(
@@ -472,7 +472,7 @@ defmodule Titticket.V1 do
 
             # Execution failed.
             { :ok, %{ "state" => "failed" } = response } ->
-              Logger.error "PayPal payment failed for order #{order.id} because #{response["failure_reason"]}"
+              Logger.error "PayPal payment failed for order #{order.id} because #{response["failure_reason"]}", pay: :paypal
               Repo.delete!(order)
 
               redirect String.replace(
@@ -482,7 +482,7 @@ defmodule Titticket.V1 do
 
             # Network error.
             { :error, reason } ->
-              Logger.error "PayPal network error for order #{order.id} (#{inspect(reason)})"
+              Logger.error "PayPal network error for order #{order.id} (#{inspect(reason)})", pay: :paypal
 
               redirect String.replace(
                 Application.get_env(:titticket, Pay.Paypal)[:success],
@@ -491,7 +491,7 @@ defmodule Titticket.V1 do
 
             # PayPal error.
             { :error, code, reason } ->
-              Logger.error "PayPal payment error for order #{order.id} (#{code} #{inspect(reason)})"
+              Logger.error "PayPal payment error for order #{order.id} (#{code} #{inspect(reason)})", pay: :paypal
 
               redirect String.replace(
                 Application.get_env(:titticket, Pay.Paypal)[:success],
@@ -506,7 +506,7 @@ defmodule Titticket.V1 do
           token = query("token")
           order = Repo.one!(Order.paypal(token: token))
 
-          Logger.info "PayPal payment cancelled for order #{order.id}"
+          Logger.info "PayPal payment cancelled for order #{order.id}", pay: :paypal
 
           Repo.delete!(order)
 

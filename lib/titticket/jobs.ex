@@ -24,7 +24,7 @@ defmodule Titticket.Jobs do
             now     = DateTime.to_unix(DateTime.utc_now)
 
             if now - updated > 60 * 60 do
-              Logger.error "PayPal payment timed out for order #{order.id}"
+              Logger.error "PayPal payment timed out for order #{order.id}", pay: :paypal
               Repo.delete!(order)
             end
 
@@ -33,26 +33,26 @@ defmodule Titticket.Jobs do
             case Pay.Paypal.Payment.execute(payment, payer) do
               # Execution successful.
               { :ok, %{ "state" => "approved" } = response } ->
-                Logger.info "PayPal payment executed for order #{order.id}"
+                Logger.info "PayPal payment executed for order #{order.id}", pay: :paypal
                 Repo.update!(order |> Order.payment(:paypal, response))
 
               # Execution failed.
               { :ok, %{ "state" => "failed" } = response } ->
-                Logger.error "PayPal payment failed for order #{order.id} because #{response["failure_reason"]}"
+                Logger.error "PayPal payment failed for order #{order.id} because #{response["failure_reason"]}", pay: :paypal
                 Repo.delete!(order)
 
               # Network error.
               { :error, reason } ->
-                Logger.error "PayPal network error for order #{order.id} (#{inspect(reason)})"
+                Logger.error "PayPal network error for order #{order.id} (#{inspect(reason)})", pay: :paypal
 
               # PayPal error.
               { :error, code, reason } ->
-                Logger.error "PayPal payment error for order #{order.id} (#{code} #{inspect(reason)})"
+                Logger.error "PayPal payment error for order #{order.id} (#{code} #{inspect(reason)})", pay: :paypal
             end
 
           # The payment failed, remove the order.
           "failed" ->
-            Logger.error "PayPal payment failed for order #{order.id}"
+            Logger.error "PayPal payment failed for order #{order.id}", pay: :paypal
             Repo.delete!(order)
         end
       end
