@@ -11,7 +11,8 @@ defmodule Titticket.Event do
   use Titticket.Changeset
 
   alias __MODULE__
-  alias Titticket.{Repo, Status, Ticket, Order, Authorization, Question, Mail}
+  alias Titticket.{Repo, Status, Ticket, Order, Authorization, Question}
+  alias Titticket.Event.{Link, Configuration}
 
   schema "events" do
     timestamps()
@@ -21,9 +22,8 @@ defmodule Titticket.Event do
 
     field :title, :string
     field :description, :string
-    field :links, { :array, Event.Link }
-    field :mail, Mail
     field :status, Status, default: :suspended
+    field :configuration, Configuration, default: %Configuration{}
 
     field :questions, { :map, Question }
 
@@ -47,9 +47,12 @@ defmodule Titticket.Event do
         opens:  event.opens,
         closes: event.closes,
 
+        configuration: %{
+          links: event.configuration.links
+        },
+
         title:       event.title,
         description: event.description,
-        links:       event.links,
         status:      event.status,
 
         questions: questions } }
@@ -61,14 +64,21 @@ defmodule Titticket.Event do
 
   def create(params \\ %{}) do
     %__MODULE__{}
-    |> cast(params, [:opens, :closes, :title, :description, :links, :mail, :status])
+    |> cast(params, [:opens, :closes, :title, :description, :status, :configuration])
     |> cast_questions(params["questions"])
     |> validate_required([:opens, :title])
   end
 
   def update(event, params \\ {}) do
-    event
-    |> cast(params, [:opens, :closes, :title, :description, :links, :mail, :status])
+    updated = event |> cast(params, [:opens, :closes, :title, :description, :status])
+
+    updated = if is_map(params["configuration"]) do
+      updated |> put_change(:configuration, Map.merge(event.configuration, params["configuration"]))
+    else
+      updated
+    end
+
+    updated
   end
 
   def available do

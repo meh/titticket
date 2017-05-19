@@ -1,12 +1,4 @@
-#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
-#                    Version 2, December 2004
-#
-#            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
-#   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
-#
-#  0. You just DO WHAT THE FUCK YOU WANT TO.
-
-defmodule Titticket.Mail do
+defmodule Titticket.Event.Mail do
   alias __MODULE__
 
   @behaviour Ecto.Type
