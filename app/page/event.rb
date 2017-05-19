@@ -76,9 +76,7 @@ class Page
 
 						_.div.card.fluid do
 							_.div.section.heading do
-								_.div.heading do
-									_.h1 "Chi Viene"
-								end
+								_.h1 "Chi Viene"
 							end
 						end
 
@@ -96,17 +94,15 @@ class Page
 				_.div.content do
 					_.div.card.fluid.information do
 						_.div.section.heading do
-							_.div.heading do
-								_.h1 @event.title
+							_.h1 @event.title
 
-								_.div.dates do
-									_.span "Dal "
-									_.strong @event.opens.strftime "%-e/%m/%Y"
+							_.div.dates do
+								_.span "Dal "
+								_.strong @event.opens.strftime "%-e/%m/%Y"
 
-									if @event.closes
-										_.span " al "
-										_.strong @event.closes.strftime "%-e/%m/%Y"
-									end
+								if @event.closes
+									_.span " al "
+									_.strong @event.closes.strftime "%-e/%m/%Y"
 								end
 							end
 						end
@@ -168,9 +164,7 @@ class Page
 					_.div.col[:sm].do {
 						_.div.card.fluid do
 							_.div.section.heading do
-								_.div.heading do
-									_.h1 "Pagamento"
-								end
+								_.h1 "Pagamento"
 							end
 						end
 
