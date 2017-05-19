@@ -19,7 +19,7 @@ class Event < Lissio::Model
 	class People < Lissio::Collection
 		class Person < Lissio::Model
 			property :name, as: String
-			property :confirmed, as: Boolean
+			property :status, as: Symbol
 		end
 
 		model Person

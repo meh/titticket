@@ -42,18 +42,14 @@ class Page
 
 			on :click, '.ticket .heading' do |e|
 				element = e.on.ancestors('.ticket').first
-				button  = element.at_css('button.buy')
+				section = element.at_css('.section')
 				ticket  = @tickets[element.data[:id].to_i]
 
-				if element.class_names.include? :active
-					element.remove_class :active
-					button.remove_class :tertiary
-
+				if section.class_names.include? :buying
+					section.remove_class :buying
 					@forms.delete(ticket.id).element.remove
 				else
-					element.add_class :active
-					button.add_class :tertiary
-
+					section.add_class :buying
 					@forms[ticket.id] = Form.new(ticket)
 
 					unless ticket.questions.empty?
@@ -76,8 +72,10 @@ class Page
 				# Left bar.
 				_.div.people do
 					_.div.col[:sm].do {
-						_.div.card.fluid.inverse do
-							_.div.section do
+						_.div.hider
+
+						_.div.card.fluid do
+							_.div.section.heading do
 								_.div.heading do
 									_.h1 "Chi Viene"
 								end
@@ -86,7 +84,7 @@ class Page
 
 						_.table.striped.preset do
 							@people.each do |person|
-								_.tr.data(confirmed: person.confirmed) do
+								_.tr.data(status: person.status) do
 									_.td person.name
 								end
 							end
@@ -96,8 +94,8 @@ class Page
 
 				# Centered content.
 				_.div.content do
-					_.div.card.fluid.inverse.information do
-						_.div.section do
+					_.div.card.fluid.information do
+						_.div.section.heading do
 							_.div.heading do
 								_.h1 @event.title
 
@@ -113,7 +111,7 @@ class Page
 							end
 						end
 
-						_.div.section do
+						_.div.section.important do
 							_.div.description do
 								`marked(#{@event.description})`
 							end
@@ -158,8 +156,8 @@ class Page
 						end
 					end
 
-					_.div.card.fluid.inverse do
-						_.div.section do
+					_.div.card.fluid do
+						_.div.section.important do
 							_ << @general
 						end
 					end
@@ -168,8 +166,8 @@ class Page
 				# Right bar.
 				_.div.checkout do
 					_.div.col[:sm].do {
-						_.div.card.fluid.inverse do
-							_.div.section do
+						_.div.card.fluid do
+							_.div.section.heading do
 								_.div.heading do
 									_.h1 "Pagamento"
 								end
@@ -224,23 +222,39 @@ class Page
 					min width: 14.em
 					padding bottom: 1.em
 
-					rule '.inverse' do
+					rule '.hider' do
+						height 'calc(56px + 1em)'
+						background :black;
+						width 100.%
+						position :fixed
+						top 0
+					end
+
+					rule '.card.fluid' do
 						z index: 100
 					end
 
-					rule '.col-sm', '.inverse' do
-						media '(min-width: 1024px)' do
-							position :sticky
-							top 'calc(56px + 1em)'
-						end
+					rule '.col-sm', '.card.fluid' do
+						position :sticky
+						top 'calc(56px + 1em)'
 					end
 
 					rule 'table' do
 						width 'calc(100% - 1rem)'
 						margin 0.5.rem
 
-						rule 'tr[data-confirmed="true"]' do
+						rule 'tr[data-status="pending"]' do
+							font style: :italic
+						end
+
+						rule 'tr[data-status="paid"]' do
 							font weight: :bold
+						end
+
+						rule 'tr[data-status="refunded"]' do
+							font weight: :bold
+							text decoration: 'line-through'
+							color :red
 						end
 					end
 				end
@@ -292,9 +306,14 @@ class Page
 					end
 
 					rule '.ticket' do
-						rule '.heading' do
+						rule '.section' do
 							rule '.buy' do
 								margin left: 1.em
+								cursor :cell
+							end
+
+							rule '&.buying .buy' do
+								background rgba(0, 0, 0, 0.25)
 							end
 						end
 					end

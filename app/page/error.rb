@@ -12,14 +12,26 @@ class Page
 			end
 
 			html do |_|
-				if @error
-					_.div.alert.critical do
-						_.h1 @error.inspect
+				case @error
+				when Exception
+					_.div.card.error do
+						_.div.section do
+							_.h1 @error.inspect
 
-						@error.backtrace.each {|line|
-							_.p line.to_s
-						}
+							@error.backtrace.each {|line|
+								_.p line.to_s
+							}
+						end
 					end
+
+				when Browser::HTTP::Response
+					_.div.card.warning do
+						_.div.section do
+							_.h1 "#{@error.status.code} #{@error.status.text}"
+							_.p @error.text
+						end
+					end
+
 				else
 					_.mark.secondary "Ah no lo so io come ci sei finito qui."
 				end

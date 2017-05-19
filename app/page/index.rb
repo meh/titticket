@@ -1,4 +1,5 @@
 class Page
+	# TODO: Move this crap to a backend configuration.
 	class Index < Page
 		class Header < Lissio::Component
 			def initialize(events)

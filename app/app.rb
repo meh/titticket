@@ -37,22 +37,6 @@ class Titticket < Lissio::Application
 			}
 		end
 
-		route '/ticket/:id' do |params|
-			Ticket.fetch(params[:id].to_i).then {|ticket|
-				element.content = ticket.inspect
-			}.fail { |e|
-				load Page::Error.new(e)
-			}
-		end
-
-		route '/order/:id/success' do |params|
-			Order.fetch(params[:id]).then {|order|
-				load Page::Order::Success.new(order)
-			}.fail { |e|
-				load Page::Error.new(e)
-			}
-		end
-
 		route '/order/failure' do
 			load Page::Order::Failure.new
 		end
@@ -61,11 +45,27 @@ class Titticket < Lissio::Application
 			load Page::Order::Cancel.new
 		end
 
+		route '/order/:id' do |params|
+			Page::Order.load(params[:id]).trace {|*args|
+				load Page::Order.new(*args)
+			}.fail { |e|
+				load Page::Error.new(e)
+			}
+		end
+
+		route '/order/:id/success' do |params|
+			Page::Order.load(params[:id]).trace {|*args|
+				load Page::Order.new(*args, true)
+			}.fail { |e|
+				load Page::Error.new(e)
+			}
+		end
+
 		missing do
 			load Page::Error.new
 		end
 
-		# Custom links.
+		# TODO: Move this crap to a backend configuration.
 		route '/italian-embassy-2017' do
 			router.match '/event/1'
 		end

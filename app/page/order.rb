@@ -1,9 +1,7 @@
 class Page
 	class Order < Page
-		class Header < Lissio::Component
-			on :render do
-				$document['header'].remove
-			end
+		def self.load(id)
+			::Order.fetch(id)
 		end
 
 		SimpleMessage = proc do
@@ -12,7 +10,7 @@ class Page
 			align items: :center
 			justify content: :center
 
-			rule 'mark' do
+			rule '.card' do
 				font size: 2.em,
 				     weight: :bold
 
@@ -20,24 +18,36 @@ class Page
 			end
 		end
 
-		class Success < Order
-			class Content < Lissio::Component
-				def initialize(order)
-					@order = order
-				end
-
-				html do |_|
-					_.mark.tertiary "Il tuo ordine è andato a buon fine."
-				end
-
-				css(&SimpleMessage)
+		class Header < Lissio::Component
+			on :render do
+				$document['header'].remove
 			end
+		end
+
+		class Content < Lissio::Component
+			def initialize(order, success = false)
+				@order = order
+			end
+
+			html do |_|
+				_.div.card.large.success do
+					_.div.section do
+						_ << "Il tuo ordine è andato a buon fine."
+					end
+				end
+			end
+
+			css(&SimpleMessage)
 		end
 
 		class Failure < Order
 			class Content < Lissio::Component
 				html do |_|
-					_.mark.secondary "Il tuo ordine è fallito, assicurati che i dati siano corretti e ci siano abbastanza fondi."
+					_.div.card.large.error do
+						_.div.section do
+							_ << "Il tuo ordine è fallito, assicurati che i dati siano corretti e ci siano abbastanza fondi."
+						end
+					end
 				end
 
 				css(&SimpleMessage)
@@ -47,7 +57,11 @@ class Page
 		class Cancel < Order
 			class Content < Lissio::Component
 				html do |_|
-					_.mark.primary "Il tuo ordine è stato annullato."
+					_.div.card.large.warning do
+						_.div.section do
+							_ << "Il tuo ordine è stato annullato."
+						end
+					end
 				end
 
 				css(&SimpleMessage)
