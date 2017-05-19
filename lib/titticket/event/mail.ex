@@ -58,6 +58,27 @@ defmodule Titticket.Event.Mail do
     end
   end
 
+  def update(mail, params) do
+    { mail, @types }
+    |> cast(params, Map.keys(@types))
+  end
+
+  def change(changeset, _field, nil) do
+    changeset
+  end
+
+  def change(changeset, field, params) do
+    updated = update(Map.get(changeset.changes, field) || Map.get(changeset.data, field) || %Mail{}, params)
+
+    if updated.valid? do
+      changeset |> put_change(field, updated |> apply_changes)
+    else
+      %Ecto.Changeset{ changeset |
+        valid?: false,
+        errors: changeset.errors ++ updated.errors }
+    end
+  end
+
   def new(this, to, fields \\ []) do
     import Bamboo.Email
 

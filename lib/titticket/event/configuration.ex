@@ -53,4 +53,28 @@ defmodule Titticket.Event.Configuration do
         :error
     end
   end
+
+  def update(configuration, params) do
+    { configuration, @types }
+      |> cast(params, [:links])
+      |> Mail.change(:mail, params["mail"] || params[:mail])
+  end
+
+  def change(changeset, _field, nil) do
+    changeset
+  end
+
+  def change(changeset, field, params) do
+    updated = update(Map.get(changeset.changes, field) || Map.get(changeset.data, field), params)
+      |> cast(params, [:links])
+      |> Mail.change(:mail, params["mail"] || params[:mail])
+
+    if updated.valid? do
+      changeset |> put_change(field, updated |> apply_changes)
+    else
+      %Ecto.Changeset{ changeset |
+        valid?: false,
+        errors: changeset.errors ++ updated.errors }
+    end
+  end
 end

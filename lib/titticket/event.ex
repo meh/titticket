@@ -70,15 +70,9 @@ defmodule Titticket.Event do
   end
 
   def update(event, params \\ {}) do
-    updated = event |> cast(params, [:opens, :closes, :title, :description, :status])
-
-    updated = if is_map(params["configuration"]) do
-      updated |> put_change(:configuration, Map.merge(event.configuration, params["configuration"]))
-    else
-      updated
-    end
-
-    updated
+    updated = event
+    |> cast(params, [:opens, :closes, :title, :description, :status])
+    |> Configuration.change(:configuration, params["configuration"] || params[:configuration])
   end
 
   def available do
