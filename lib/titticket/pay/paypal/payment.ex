@@ -34,8 +34,8 @@ defmodule Titticket.Pay.Paypal.Payment do
           total:    total } }],
 
       redirect_urls: %{
-        return_url: "#{Application.get_env(:titticket, V1)[:base]}/v1/paypal/done",
-        cancel_url: "#{Application.get_env(:titticket, V1)[:base]}/v1/paypal/cancel" }
+        return_url: "#{Application.get_env(:titticket, V1)[:base]}/v1/pay/paypal/done",
+        cancel_url: "#{Application.get_env(:titticket, V1)[:base]}/v1/pay/paypal/cancel" }
     }), headers) |> parse
   end
 

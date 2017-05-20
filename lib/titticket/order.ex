@@ -42,7 +42,9 @@ defmodule Titticket.Order do
     updated = order |> cast(params, [:identifier, :email, :private, :status])
 
     updated = if is_map(params["payment"] || params[:payment]) do
-      updated |> put_change(:payment, %Payment.Details{ order.payment |
+      payment = Map.get(updated.changes, :payment) || Map.get(updated.data, :payment)
+
+      updated |> put_change(:payment, %Payment.Details{ payment |
         details: params["payment"] || params[:payment] })
     else
       updated
@@ -72,6 +74,14 @@ defmodule Titticket.Order do
   def total(order, payment) do
     Enum.reduce order.purchases, Decimal.new(0),
       &Decimal.add(Purchase.total(&1, payment), &2)
+  end
+
+  def wire(id) do
+    import Ecto.Query
+
+    from o in Order,
+      where: fragment(~s[? #> '{details,id}' = ?], o.payment, ^id) and
+             fragment(~s[? -> 'type' = ?], o.payment, ^:wire)
   end
 
   def paypal(id) when is_binary(id) do
@@ -106,17 +116,18 @@ defmodule Titticket.Order do
              fragment(~s[? -> 'type' = ?], o.payment, ^:paypal)
   end
 
-  def pending do
+  def status(value) do
     import Ecto.Query
 
     from o in Order,
-      where: not o.status == ^:pending
+      where: o.status == ^value
   end
 
-  def pending(:paypal) do
+  def status(value, type) do
     import Ecto.Query
 
     from o in Order,
-      where: fragment(~s[? -> 'type' = ?], o.payment, ^:paypal) and o.status in ^[:created, :pending]
+      where: o.status == ^value and
+             fragment(~s[? -> 'type' = ?], o.payment, ^type)
   end
 end

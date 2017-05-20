@@ -10,8 +10,20 @@ defmodule Titticket.Jobs do
   require Logger
   alias Titticket.{Repo, Order, Pay}
 
+  def wire do
+    Enum.each Repo.all(Order.status(:pending, :wire)), fn order ->
+      updated = DateTime.to_unix(DateTime.from_naive!(order.updated_at, "Etc/UTC"))
+      now     = DateTime.to_unix(DateTime.utc_now)
+
+      if now - updated > Application.get_env(:titticket, Pay.Wire)[:timeout] do
+        Logger.error "Wire payment timed out for order #{order.id}", pay: :wire
+        Repo.delete!(order)
+      end
+    end
+  end
+
   def paypal do
-    Enum.each Repo.all(Order.pending(:paypal)), fn order ->
+    Enum.each Repo.all(Order.status(:created, :paypal)), fn order ->
       spawn fn ->
         payment  = order.payment.details["id"]
         response = Pay.Paypal.Payment.status!(payment)
@@ -23,7 +35,8 @@ defmodule Titticket.Jobs do
             updated = DateTime.to_unix(DateTime.from_naive!(order.updated_at, "Etc/UTC"))
             now     = DateTime.to_unix(DateTime.utc_now)
 
-            if now - updated > 60 * 60 do
+            # If the order has been pending for an hour.
+            if now - updated > Application.get_env(:titticket, Pay.Paypal)[:timeout] do
               Logger.error "PayPal payment timed out for order #{order.id}", pay: :paypal
               Repo.delete!(order)
             end
@@ -34,7 +47,9 @@ defmodule Titticket.Jobs do
               # Execution successful.
               { :ok, %{ "state" => "approved" } = response } ->
                 Logger.info "PayPal payment executed for order #{order.id}", pay: :paypal
-                Repo.update!(order |> Order.payment(:paypal, response))
+                Repo.update!(order
+                  |> Order.update(%{ status: :pending })
+                  |> Order.payment(:paypal, response))
 
               # Execution failed.
               { :ok, %{ "state" => "failed" } = response } ->

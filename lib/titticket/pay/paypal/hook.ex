@@ -2,9 +2,6 @@ defmodule Titticket.Pay.Paypal.Hook do
   use HTTProt
   import Titticket.Pay.Paypal.Agent
 
-  alias Titticket.{V1, Order, Purchase}
-  alias Titticket.Pay.Paypal
-
   @doc """
   List all available web hooks.
   """

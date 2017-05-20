@@ -42,7 +42,7 @@ defmodule Titticket.Pay.Paypal do
   end
 
   defp url do
-    "#{Application.get_env(:titticket, V1)[:base]}/v1/paypal/hook"
+    "#{Application.get_env(:titticket, V1)[:base]}/v1/pay/paypal/hook"
   end
 
   defp if_needed(hooks) when is_list(hooks) do
