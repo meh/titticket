@@ -41,8 +41,8 @@ defmodule Titticket.V1 do
                    :authorized             <- can?({ :query, :event, id, :people }),
                    event when event != nil <- Repo.get(Event, id)
               do
-                Enum.map Repo.all(Event.people(event)), fn [name, status] ->
-                  %{ name: name, status: status }
+                Enum.map Repo.all(Event.people(event)), fn [name, status, at] ->
+                  %{ name: name, status: status, at: at }
                 end
               else
                 :unauthorized ->
