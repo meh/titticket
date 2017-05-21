@@ -79,41 +79,19 @@ defmodule Titticket.Order do
   def wire(id) do
     import Ecto.Query
 
-    from o in Order,
-      where: fragment(~s[? #> '{details,id}' = ?], o.payment, ^id) and
-             fragment(~s[? -> 'type' = ?], o.payment, ^:wire)
+    from o in Order, where: fragment("? @> ?", o.payment,
+      ^%{ type: :wire, details: %{ id: id } })
   end
 
   def paypal(id) when is_binary(id) do
-    import Ecto.Query
-
-    from o in Order,
-      where: fragment(~s[? #> '{details,id}' = ?], o.payment, ^id) and
-             fragment(~s[? -> 'type' = ?], o.payment, ^:paypal)
+    paypal(id: id)
   end
 
-  def paypal(token: token) do
+  def paypal([{ field, value }]) do
     import Ecto.Query
 
-    from o in Order,
-      where: fragment(~s[? #> '{details,token}' = ?], o.payment, ^token) and
-             fragment(~s[? -> 'type' = ?], o.payment, ^:paypal)
-  end
-
-  def paypal(sale: sale) do
-    import Ecto.Query
-
-    from o in Order,
-      where: fragment(~s[? #> '{details,sale}' = ?], o.payment, ^sale) and
-             fragment(~s[? -> 'type' = ?], o.payment, ^:paypal)
-  end
-
-  def paypal(payer: payer) do
-    import Ecto.Query
-
-    from o in Order,
-      where: fragment(~s[? #> '{details,payer}' = ?], o.payment, ^payer) and
-             fragment(~s[? -> 'type' = ?], o.payment, ^:paypal)
+    from o in Order, where: fragment("? @> ?", o.payment,
+      ^%{ type: :paypal, field => value }
   end
 
   def status(value) do
@@ -126,8 +104,7 @@ defmodule Titticket.Order do
   def status(value, type) do
     import Ecto.Query
 
-    from o in Order,
-      where: o.status == ^value and
-             fragment(~s[? -> 'type' = ?], o.payment, ^type)
+    from o in Order, where: o.status == ^value and
+      fragment("? @> ?", o.payment, ^%{ type: type })
   end
 end
