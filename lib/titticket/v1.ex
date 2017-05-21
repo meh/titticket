@@ -446,7 +446,7 @@ defmodule Titticket.V1 do
         end
 
         resource :confirm do
-          get do
+          post do
             order = Repo.one!(Order.wire(query("id")))
 
             if order.status != :pending || can?({ :confirm, :order, order.id }) != :authorized do
