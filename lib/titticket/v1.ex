@@ -468,7 +468,7 @@ defmodule Titticket.V1 do
             case param("event_type") do
               "PAYMENT.SALE." <> event ->
                 id    = param("resource")["parent_payment"]
-                order = Repo.one!(Order.paypal(id))
+                order = Repo.one!(Order.paypal(id)) |> Repo.preload([:event, purchases: :ticket])
 
                 case event do
                   "COMPLETED" ->
