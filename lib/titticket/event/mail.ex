@@ -82,12 +82,24 @@ defmodule Titticket.Event.Mail do
   def new(this, to, fields \\ []) do
     import Bamboo.Email
 
-    new_email
+    mail = new_email
     |> from(this.sender)
     |> to(to)
     |> bcc(this.notify)
     |> subject(EEx.eval_string(this.subject, assigns: fields))
-    |> html_body(EEx.eval_string(this.html, assigns: fields))
-    |> text_body(EEx.eval_string(this.plain, assigns: fields))
+
+    mail = if this.html do
+      mail |> html_body(EEx.eval_string(this.html, assigns: fields))
+    else
+      mail
+    end
+
+    mail = if this.plain do
+      mail |> text_body(EEx.eval_string(this.plain, assigns: fields))
+    else
+      mail
+    end
+
+    mail
   end
 end
