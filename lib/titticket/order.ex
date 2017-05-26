@@ -91,7 +91,7 @@ defmodule Titticket.Order do
     import Ecto.Query
 
     from o in Order, where: fragment("? @> ?", o.payment,
-      ^%{ type: :paypal, field => value }
+      ^%{ :type => :paypal, field => value })
   end
 
   def status(value) do
@@ -105,6 +105,7 @@ defmodule Titticket.Order do
     import Ecto.Query
 
     from o in Order, where: o.status == ^value and
-      fragment("? @> ?", o.payment, ^%{ type: type })
+      fragment("? @> ?", o.payment,
+        ^%{ type: type })
   end
 end
