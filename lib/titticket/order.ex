@@ -35,6 +35,8 @@ defmodule Titticket.Order do
     |> validate_required([:identifier, :email])
     |> cast_answers(params["answers"])
     |> validate_answers(:answers, event.questions)
+    |> update_change(:identifier, &String.trim(&1))
+    |> update_change(:email, &String.trim(&1))
     |> put_assoc(:event, event)
   end
 
