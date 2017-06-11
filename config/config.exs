@@ -25,6 +25,8 @@ config :titticket, Repo,
 # Internal jobs.
 config :quantum, :titticket,
   cron: [
+    "@hourly": &Jobs.cash/0,
+    "@hourly": &Jobs.wire/0,
     "@hourly": &Jobs.paypal/0
   ]
 

@@ -10,6 +10,18 @@ defmodule Titticket.Jobs do
   require Logger
   alias Titticket.{Repo, Order, Pay}
 
+  def cash do
+    Enum.each Repo.all(Order.status(:created, :cash)), fn order ->
+      updated = DateTime.to_unix(DateTime.from_naive!(order.updated_at, "Etc/UTC"))
+      now     = DateTime.to_unix(DateTime.utc_now)
+
+      if now - updated > Application.get_env(:titticket, Pay.Cash)[:timeout] do
+        Logger.error "Cash payment timed out for order #{order.id}", pay: :cash
+        Repo.delete!(order)
+      end
+    end
+  end
+
   def wire do
     Enum.each Repo.all(Order.status(:pending, :wire)), fn order ->
       updated = DateTime.to_unix(DateTime.from_naive!(order.updated_at, "Etc/UTC"))
