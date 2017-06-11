@@ -329,7 +329,8 @@ defmodule Titticket.V1 do
           do
             { action, details } = case order.payment.type do
               :cash ->
-                { nil, %{} }
+                { %{ redirect: "#{Application.get_env(:titticket, __MODULE__)[:base]}/v1/pay/cash/done?id=#{id}" },
+                  %{} }
 
               :wire ->
                 id = Pay.Wire.unique
@@ -422,6 +423,51 @@ defmodule Titticket.V1 do
 
     # Payment integration.
     namespace :pay do
+      namespace :cash do
+        resource :done do
+          get do
+            id    = query("id")
+            order = Repo.get!(Order, id)
+
+            if order.status != :created do
+              fail 401
+            else
+              Logger.info "Cash payment created"
+
+              if mail = order.event.configuration.mail do
+                mail |> Event.Mail.new(order.email, order: order) |> Mailer.deliver_later
+              end
+
+              redirect String.replace(
+                Application.get_env(:titticket, Pay.Cash)[:done],
+                ":order",
+                to_string(order.id))
+            end
+          end
+
+        end
+
+        resource :confirm do
+          get do
+            id    = query("id")
+            order = Repo.get!(Order, id)
+
+            if order.status != :created do
+              fail 401
+            else
+              Logger.info "Cash payment confirmed"
+
+              Repo.update!(order |> Order.update(%{ status: :pending }))
+
+              redirect String.replace(
+                Application.get_env(:titticket, Pay.Cash)[:done],
+                ":order",
+                to_string(order.id))
+            end
+          end
+        end
+      end
+
       namespace :wire do
         resource :done do
           get do
