@@ -427,7 +427,7 @@ defmodule Titticket.V1 do
         resource :done do
           get do
             id    = query("id")
-            order = Repo.get!(Order, id)
+            order = Repo.get!(Order, id) |> Repo.preload([:event, purchases: :ticket])
 
             if order.status != :created do
               fail 401
