@@ -329,7 +329,7 @@ defmodule Titticket.V1 do
           do
             { action, details } = case order.payment.type do
               :cash ->
-                { %{ redirect: "#{Application.get_env(:titticket, __MODULE__)[:base]}/v1/pay/cash/done?id=#{id}" },
+                { %{ redirect: "#{Application.get_env(:titticket, __MODULE__)[:base]}/v1/pay/cash/done?id=#{order.id}" },
                   %{} }
 
               :wire ->
